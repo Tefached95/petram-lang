@@ -131,4 +131,4 @@ $somevar := #[
 - Explicit expression syntax with `#[ ]#`
 - Strong emphasis on compile-time checks and constraints
 
-Note: Petra prioritizes explicitness, verbosity, and robustness. It's designed as a general-purpose, low-level language capable of targeting multiple architectures, with a focus on data-oriented design and compile-time safety.
+Note: Petram prioritizes explicitness, verbosity, and robustness. It's designed as a general-purpose, low-level language capable of targeting multiple architectures, with a focus on data-oriented design and compile-time safety.
