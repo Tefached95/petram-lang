@@ -1,8 +1,4 @@
 -- hello_world.erg
-func #[main :: args: List<String>]#: () ->
-    #[println :: message: "Hello, World!\n"]#
-    () -- implicit return of the unit type
-
 {-
     This is a multiline comment.
     We can use this to use docblocks for describing function parameters and return types.
