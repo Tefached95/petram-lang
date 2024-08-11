@@ -54,7 +54,7 @@
 ## Control Structures
 
 - We support the standard if/else if/else pattern.
-  - The final `else` is optional.
+  - The `if else` and final `else` are optional
 
   - ```petra
     if #[somecond]# ->
