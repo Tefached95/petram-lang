@@ -25,7 +25,7 @@ struct #[PrintableHolder<T>]# where T < Printable ->
         @item = item
 
     -- In this method, since we know that T derives from Printable, we can call .to_string() on it.
-    method #[print_containing_item]# => #[item.to_string()#]
+    method #[print_containing_item]#: String => #[item.to_string()#]
 
 struct #[DoesNotImplementPrintable]# ->
     field n: Int
