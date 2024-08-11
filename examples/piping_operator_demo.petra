@@ -1,5 +1,5 @@
 -- Petram Example: Pipe Operator and Method Chaining
--- File: example.petra
+-- File: piping_operator_demo.petra
 
 func #[main :: args: List<String>]#: Void ->
     -- Define a list of numbers
@@ -23,8 +23,7 @@ func #[main :: args: List<String>]#: Void ->
             @name = name
             @age = age
 
-        method #[greet]#: String ->
-            "Hello, my name is {@name}!"
+        method #[greet]#: String => "Hello, my name is {@name}!"
 
     $people: List<Person> = {|
         #[new Person(name: "Alice", age: 30)]#,
