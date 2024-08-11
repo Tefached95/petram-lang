@@ -89,7 +89,9 @@ $somevar := #[
 ## Error Handling
 
 - `Result<T, E>` for operations that can fail
+  - `Result::Ok()` will contain the `T`. `Result::Error()` will contain the `E`
 - `Option<T>` for when a value might or might not be present. No nulls or nils.
+  - Like in rust, there's `Option::Some(value)` and `Option::None`.
 - No traditional try/catch syntax, use `#[match]#`
 
 ## Operators
@@ -102,10 +104,11 @@ $somevar := #[
 
   ```petra
     $numbers := {|1, 2, 3|} -- List<Int>
+  
     $times_two_squared_divided_by_three := #[
-    $numbers.map(f: func #[num: Int]: Int => num * 2)
-    |> #[.map(f: func #[num: Int]: Int => num * num)]
-    |> #[.map(f: func #[num: Int]: Float => num / 3)]
+      $numbers.map(f: func #[num: Int]: Int => num * 2)
+      |> #[.map(f: func #[num: Int]: Int => num * num)]
+      |> #[.map(f: func #[num: Int]: Float => num / 3)]
     ]#
 
     -- result: {|1.3333333333333333, 5.333333333333333, 12|}
