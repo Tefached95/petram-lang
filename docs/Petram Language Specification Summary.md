@@ -1,4 +1,4 @@
-# Ergor Language Specification Summary
+# Petram Language Specification Summary
 
 ## Core Principles
 
