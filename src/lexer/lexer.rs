@@ -68,7 +68,6 @@ pub enum TokenType {
     Indent,
     Dedent,
     Newline,
-    EOL,
     EOF,
 
     // Other delimiters
