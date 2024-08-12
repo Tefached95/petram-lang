@@ -200,13 +200,21 @@ impl<'a> Lexer<'a> {
                     };
                 }
 
-                // Comments
+                // Comments or single arrow ->
                 '-' => {
-                    if self.peek_next() == Some('-') {
+                    if self.peek() == Some(&'>') {
+                        // Single arrow ->
+                        self.advance();
+                        return Token {
+                            token_type: TokenType::Arrow,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
+                    } else if self.peek_next() == Some('-') {
                         self.advance(); // Consume first '-'
                         self.advance(); // Consume second '-'
                         while let Some(ch) = self.peek() {
-                            if *ch == '\n' {
+                            if *ch == '\n' || *ch == '\r' {
                                 break;
                             }
                             self.advance();
@@ -246,6 +254,14 @@ impl<'a> Lexer<'a> {
                 }
                 ')' | ']' | '}' => {
                     let bracket = self.advance().unwrap();
+                    if self.peek() == Some(&'#') {
+                        self.advance();
+                        return Token {
+                            token_type: TokenType::ExprEnd,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
+                    }
                     return Token {
                         token_type: TokenType::CloseBracket(bracket),
                         line: self.line,
@@ -458,24 +474,6 @@ impl<'a> Lexer<'a> {
                         };
                     }
                 }
-                '-' => {
-                    self.advance();
-                    if self.peek() == Some(&'>') {
-                        self.advance();
-                        return Token {
-                            token_type: TokenType::Arrow,
-                            line: self.line,
-                            column: self.column - 1,
-                        };
-                    } else {
-                        return Token {
-                            token_type: TokenType::Minus,
-                            line: self.line,
-                            column: self.column,
-                        };
-                    }
-                }
-
                 // Other tokens
                 ',' => {
                     self.advance();
@@ -504,24 +502,6 @@ impl<'a> Lexer<'a> {
                         };
                     }
                 }
-                ']' => {
-                    self.advance();
-                    if self.peek() == Some(&'#') {
-                        self.advance();
-                        return Token {
-                            token_type: TokenType::ExprEnd,
-                            line: self.line,
-                            column: self.column - 1,
-                        };
-                    } else {
-                        return Token {
-                            token_type: TokenType::CloseBracket(']'),
-                            line: self.line,
-                            column: self.column,
-                        };
-                    }
-                }
-
                 // Identifiers and keywords
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let mut identifier = String::new();
