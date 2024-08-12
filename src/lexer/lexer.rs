@@ -1,10 +1,24 @@
-use std::str::Chars;
+// src/lexer/lexer.rs
+
 use std::iter::Peekable;
+use std::str::Chars;
 
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
     // Keywords
-    Func, Struct, Trait, New, Return, Constrain, Field, Method, If, Else, Foreach, In, Match,
+    Func,
+    Struct,
+    Trait,
+    New,
+    Return,
+    Constrain,
+    Field,
+    Method,
+    If,
+    Else,
+    Foreach,
+    In,
+    Match,
 
     // Literals
     Identifier(String),
@@ -14,11 +28,32 @@ pub enum TokenType {
     Bool(bool),
 
     // Operators
-    Plus, Minus, Multiply, Divide, Modulo,
-    Equal, NotEqual, LessThan, GreaterThan, LessEqual, GreaterEqual,
-    And, Or, Not,
-    BitwiseAnd, BitwiseOr, BitwiseXor, BitwiseNot, LeftShift, RightShift,
-    Assign, DeclareAssign, Colon, Arrow, FatArrow, Pipe,
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+    Modulo,
+    Equal,
+    NotEqual,
+    LessThan,
+    GreaterThan,
+    LessEqual,
+    GreaterEqual,
+    And,
+    Or,
+    Not,
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
+    BitwiseNot,
+    LeftShift,
+    RightShift,
+    Assign,
+    DeclareAssign,
+    Colon,
+    Arrow,
+    FatArrow,
+    Pipe,
 
     // Simplified bracket tokens
     OpenBracket(char),  // Can be '(', '[', or '{'
@@ -27,7 +62,8 @@ pub enum TokenType {
     ListBraceClose,     // For '|}'
 
     // Special
-    ExprStart, ExprEnd, // For #[ and ]#
+    ExprStart,
+    ExprEnd, // For #[ and ]#
     Comment,
     Indent,
     Dedent,
@@ -36,7 +72,8 @@ pub enum TokenType {
     EOF,
 
     // Other delimiters
-    Comma, Dot,
+    Comma,
+    Dot,
 }
 
 #[derive(Debug)]
@@ -61,6 +98,19 @@ impl<'a> Lexer<'a> {
             column: 0,
             indentation_stack: vec![0], // Start with 0 indentation
         }
+    }
+
+    pub fn tokenize(&mut self) -> Vec<Token> {
+        let mut tokens = Vec::new();
+        loop {
+            let token = self.next_token();
+            let is_eof = token.token_type == TokenType::EOF;
+            tokens.push(token);
+            if is_eof {
+                break;
+            }
+        }
+        tokens
     }
 
     fn advance(&mut self) -> Option<char> {
@@ -99,12 +149,20 @@ impl<'a> Lexer<'a> {
         if spaces > current_indent {
             // Indentation increased
             self.indentation_stack.push(spaces);
-            tokens.push(Token { token_type: TokenType::Indent, line: self.line, column: self.column });
+            tokens.push(Token {
+                token_type: TokenType::Indent,
+                line: self.line,
+                column: self.column,
+            });
         } else if spaces < current_indent {
             // Indentation decreased
             while spaces < *self.indentation_stack.last().unwrap() {
                 self.indentation_stack.pop();
-                tokens.push(Token { token_type: TokenType::Dedent, line: self.line, column: self.column });
+                tokens.push(Token {
+                    token_type: TokenType::Dedent,
+                    line: self.line,
+                    column: self.column,
+                });
             }
             if spaces != *self.indentation_stack.last().unwrap() {
                 // Mismatched indentation
@@ -118,7 +176,7 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token {
         if self.column == 0 {
             // We're at the start of a new line
-            let indent_tokens = self.handle_indentation();
+            let mut indent_tokens = self.handle_indentation();
             if !indent_tokens.is_empty() {
                 return indent_tokens.remove(0);
             }
@@ -135,7 +193,11 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     self.line += 1;
                     self.column = 0;
-                    return Token { token_type: TokenType::Newline, line: self.line - 1, column: self.column };
+                    return Token {
+                        token_type: TokenType::Newline,
+                        line: self.line - 1,
+                        column: self.column,
+                    };
                 }
 
                 // Comments
@@ -144,13 +206,23 @@ impl<'a> Lexer<'a> {
                         self.advance(); // Consume first '-'
                         self.advance(); // Consume second '-'
                         while let Some(ch) = self.peek() {
-                            if *ch == '\n' { break; }
+                            if *ch == '\n' {
+                                break;
+                            }
                             self.advance();
                         }
-                        return Token { token_type: TokenType::Comment, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::Comment,
+                            line: self.line,
+                            column: self.column,
+                        };
                     } else {
                         self.advance();
-                        return Token { token_type: TokenType::Minus, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::Minus,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
 
@@ -159,14 +231,26 @@ impl<'a> Lexer<'a> {
                     let bracket = self.advance().unwrap();
                     if bracket == '{' && self.peek() == Some(&'|') {
                         self.advance();
-                        return Token { token_type: TokenType::ListBraceOpen, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::ListBraceOpen,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::OpenBracket(bracket), line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::OpenBracket(bracket),
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
                 ')' | ']' | '}' => {
                     let bracket = self.advance().unwrap();
-                    return Token { token_type: TokenType::CloseBracket(bracket), line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::CloseBracket(bracket),
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
 
                 // Bitwise operators and pipe
@@ -174,145 +258,275 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     if self.peek() == Some(&'}') {
                         self.advance();
-                        return Token { token_type: TokenType::ListBraceClose, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::ListBraceClose,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else if self.peek() == Some(&'>') {
                         self.advance();
-                        return Token { token_type: TokenType::Pipe, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::Pipe,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else if self.peek() == Some(&'|') {
                         self.advance();
-                        return Token { token_type: TokenType::Or, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::Or,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::BitwiseOr, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::BitwiseOr,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
                 '&' => {
                     self.advance();
                     if self.peek() == Some(&'&') {
                         self.advance();
-                        return Token { token_type: TokenType::And, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::And,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::BitwiseAnd, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::BitwiseAnd,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
                 '^' => {
                     self.advance();
-                    return Token { token_type: TokenType::BitwiseXor, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::BitwiseXor,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '~' => {
                     self.advance();
-                    return Token { token_type: TokenType::BitwiseNot, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::BitwiseNot,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '<' => {
                     self.advance();
                     if self.peek() == Some(&'<') {
                         self.advance();
-                        return Token { token_type: TokenType::LeftShift, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::LeftShift,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else if self.peek() == Some(&'=') {
                         self.advance();
-                        return Token { token_type: TokenType::LessEqual, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::LessEqual,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::LessThan, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::LessThan,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
                 '>' => {
                     self.advance();
                     if self.peek() == Some(&'>') {
                         self.advance();
-                        return Token { token_type: TokenType::RightShift, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::RightShift,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else if self.peek() == Some(&'=') {
                         self.advance();
-                        return Token { token_type: TokenType::GreaterEqual, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::GreaterEqual,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::GreaterThan, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::GreaterThan,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
 
                 // Other operators
                 '+' => {
                     self.advance();
-                    return Token { token_type: TokenType::Plus, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::Plus,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '*' => {
                     self.advance();
-                    return Token { token_type: TokenType::Multiply, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::Multiply,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '/' => {
                     self.advance();
-                    return Token { token_type: TokenType::Divide, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::Divide,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '%' => {
                     self.advance();
-                    return Token { token_type: TokenType::Modulo, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::Modulo,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '=' => {
                     self.advance();
                     if self.peek() == Some(&'=') {
                         self.advance();
-                        return Token { token_type: TokenType::Equal, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::Equal,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else if self.peek() == Some(&'>') {
                         self.advance();
-                        return Token { token_type: TokenType::FatArrow, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::FatArrow,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::Assign, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::Assign,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
                 '!' => {
                     self.advance();
                     if self.peek() == Some(&'=') {
                         self.advance();
-                        return Token { token_type: TokenType::NotEqual, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::NotEqual,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::Not, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::Not,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
                 ':' => {
                     self.advance();
                     if self.peek() == Some(&'=') {
                         self.advance();
-                        return Token { token_type: TokenType::DeclareAssign, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::DeclareAssign,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::Colon, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::Colon,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
                 '-' => {
                     self.advance();
                     if self.peek() == Some(&'>') {
                         self.advance();
-                        return Token { token_type: TokenType::Arrow, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::Arrow,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::Minus, line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::Minus,
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
 
                 // Other tokens
                 ',' => {
                     self.advance();
-                    return Token { token_type: TokenType::Comma, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::Comma,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '.' => {
                     self.advance();
-                    return Token { token_type: TokenType::Dot, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::Dot,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
                 '#' => {
                     self.advance();
                     if self.peek() == Some(&'[') {
                         self.advance();
-                        return Token { token_type: TokenType::ExprStart, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::ExprStart,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     }
                 }
                 ']' => {
                     self.advance();
                     if self.peek() == Some(&'#') {
                         self.advance();
-                        return Token { token_type: TokenType::ExprEnd, line: self.line, column: self.column - 1 };
+                        return Token {
+                            token_type: TokenType::ExprEnd,
+                            line: self.line,
+                            column: self.column - 1,
+                        };
                     } else {
-                        return Token { token_type: TokenType::CloseBracket(']'), line: self.line, column: self.column };
+                        return Token {
+                            token_type: TokenType::CloseBracket(']'),
+                            line: self.line,
+                            column: self.column,
+                        };
                     }
                 }
 
                 // Identifiers and keywords
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let mut identifier = String::new();
+                    let start_column = self.column;
+
                     while let Some(&ch) = self.peek() {
                         if ch.is_alphanumeric() || ch == '_' {
                             identifier.push(ch);
@@ -321,6 +535,7 @@ impl<'a> Lexer<'a> {
                             break;
                         }
                     }
+
                     let token_type = match identifier.as_str() {
                         "func" => TokenType::Func,
                         "struct" => TokenType::Struct,
@@ -339,7 +554,12 @@ impl<'a> Lexer<'a> {
                         "false" => TokenType::Bool(false),
                         _ => TokenType::Identifier(identifier),
                     };
-                    return Token { token_type, line: self.line, column: self.column - identifier.len() };
+                    
+                    return Token {
+                        token_type,
+                        line: self.line,
+                        column: start_column,
+                    };
                 }
 
                 // Numbers
@@ -363,7 +583,11 @@ impl<'a> Lexer<'a> {
                     } else {
                         TokenType::Integer(number.parse().unwrap())
                     };
-                    return Token { token_type, line: self.line, column: self.column - number.len() };
+                    return Token {
+                        token_type,
+                        line: self.line,
+                        column: self.column - number.len(),
+                    };
                 }
 
                 // Strings
@@ -392,16 +616,28 @@ impl<'a> Lexer<'a> {
                             self.advance();
                         }
                     }
-                    return Token { token_type: TokenType::String(string), line: self.line, column: self.column - string.len() - 2 };
+                    return Token {
+                        token_type: TokenType::String(string.clone()),
+                        line: self.line,
+                        column: self.column - string.len() - 2,
+                    };
                 }
 
                 _ => {
                     // Unrecognized character
                     self.advance();
-                    return Token { token_type: TokenType::EOF, line: self.line, column: self.column };
+                    return Token {
+                        token_type: TokenType::EOF,
+                        line: self.line,
+                        column: self.column,
+                    };
                 }
             }
         }
-        Token { token_type: TokenType::EOF, line: self.line, column: self.column }
+        Token {
+            token_type: TokenType::EOF,
+            line: self.line,
+            column: self.column,
+        }
     }
 }
