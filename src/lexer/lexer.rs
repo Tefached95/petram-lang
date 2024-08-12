@@ -353,7 +353,7 @@ impl<'a> Lexer<'a> {
                         return Token {
                             token_type: TokenType::Comment(comment_content.trim().to_string()),
                             line: start_line,
-                            column: start_column,
+                            column: start_column + comment_content.len(),
                         };
                     } else {
                         return Token {
