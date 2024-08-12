@@ -213,6 +213,7 @@ impl<'a> Lexer<'a> {
                         self.advance(); // Consume first '-'
                         self.advance(); // Consume second '-'
                         while let Some(ch) = self.peek() {
+                            // End of comment
                             if *ch == '\n' || *ch == '\r' {
                                 break;
                             }
