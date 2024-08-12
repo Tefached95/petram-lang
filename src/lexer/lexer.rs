@@ -1,5 +1,6 @@
 // src/lexer/lexer.rs
 
+use std::fmt;
 use std::iter::Peekable;
 use std::str::Chars;
 
@@ -26,6 +27,11 @@ pub enum TokenType {
     Float(f64),
     String(String),
     Bool(bool),
+    Variable(String),
+
+    // Types
+    Type(String),
+    GenericTypeIdentifiers(Vec<String>),
 
     // Operators
     Plus,
@@ -54,6 +60,7 @@ pub enum TokenType {
     Arrow,
     FatArrow,
     Pipe,
+    DoubleColon,
 
     // Simplified bracket tokens
     OpenBracket(char),  // Can be '(', '[', or '{'
@@ -64,7 +71,8 @@ pub enum TokenType {
     // Special
     ExprStart,
     ExprEnd, // For #[ and ]#
-    Comment,
+    Comment(String),
+    Error(String),
     Indent,
     Dedent,
     Newline,
@@ -113,8 +121,31 @@ impl<'a> Lexer<'a> {
     }
 
     fn advance(&mut self) -> Option<char> {
-        self.column += 1;
-        self.input.next()
+        let ch = self.input.next();
+        if let Some(c) = ch {
+            self.column += 1;
+            if c == '\n' {
+                self.line += 1;
+                self.column = 0;
+            } else {
+                self.column += 1;
+            }
+        }
+        ch
+    }
+
+    fn advance_by(&mut self, amount: usize) {
+        for _ in 0..amount {
+            if let Some(c) = self.input.next() {
+                self.column += 1;
+                if c == '\n' {
+                    self.line += 1;
+                    self.column = 0;
+                }
+            } else {
+                break;
+            }
+        }
     }
 
     fn peek(&mut self) -> Option<&char> {
@@ -123,6 +154,24 @@ impl<'a> Lexer<'a> {
 
     fn peek_next(&mut self) -> Option<char> {
         self.input.clone().nth(1)
+    }
+
+    fn peek_by(&mut self, amount: usize) -> Option<String> {
+        let mut peeked = String::new();
+        for _ in 0..amount {
+            peeked.push(self.input.next().unwrap());
+        }
+        Some(peeked)
+    }
+
+    fn skip_whitespace(&mut self) {
+        while let Some(&ch) = self.peek() {
+            if ch.is_whitespace() && ch != '\n' {
+                self.advance();
+            } else {
+                break;
+            }
+        }
     }
 
     fn handle_indentation(&mut self) -> Vec<Token> {
@@ -137,7 +186,7 @@ impl<'a> Lexer<'a> {
             } else if ch == '\t' {
                 // Treat tabs as 4 spaces
                 spaces += 4;
-                self.advance();
+                self.advance_by(4);
             } else {
                 break;
             }
@@ -160,7 +209,7 @@ impl<'a> Lexer<'a> {
                 tokens.push(Token {
                     token_type: TokenType::Dedent,
                     line: self.line,
-                    column: self.column,
+                    column: 0,
                 });
             }
             if spaces != *self.indentation_stack.last().unwrap() {
@@ -172,6 +221,82 @@ impl<'a> Lexer<'a> {
         tokens
     }
 
+    fn parse_type_identifier(&mut self) -> Option<String> {
+        let mut identifier = String::new();
+
+        if let Some(&ch) = self.peek() {
+            if ch.is_ascii_uppercase() {
+                identifier.push(ch);
+                self.advance();
+
+                while let Some(&ch) = self.peek() {
+                    if ch.is_alphanumeric() || ch == '_' {
+                        identifier.push(ch);
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+
+                Some(identifier)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    fn parse_identifier(&mut self) -> Option<(String, usize)> {
+        let mut identifier = String::new();
+        let start_column = self.column;
+        let mut expect_lowercase_or_underscore = true;
+
+        while let Some(&ch) = self.peek() {
+            match ch {
+                'a'..='z' => {
+                    identifier.push(ch);
+                    expect_lowercase_or_underscore = true;
+                    self.advance();
+                }
+                'A'..='Z' => {
+                    return None; // Uppercase letters are not allowed
+                }
+                '0'..='9' => {
+                    if identifier.is_empty() {
+                        return None; // Identifiers can't start with a number
+                    }
+                    identifier.push(ch);
+                    expect_lowercase_or_underscore = true;
+                    self.advance();
+                }
+                '_' => {
+                    if !expect_lowercase_or_underscore || identifier.ends_with('_') {
+                        return None; // Consecutive underscores or underscore after a number are not allowed
+                    }
+                    identifier.push(ch);
+                    expect_lowercase_or_underscore = false;
+                    self.advance();
+                }
+                _ => break,
+            }
+        }
+
+        if identifier.is_empty() || identifier.ends_with('_') {
+            None
+        } else {
+            Some((identifier, start_column))
+        }
+    }
+
+    fn error_token(&self, message: &str, line: usize, column: usize) -> Token {
+        Token {
+            token_type: TokenType::Error(message.to_string()),
+            line,
+            column,
+        }
+    }
+
     pub fn next_token(&mut self) -> Token {
         if self.column == 0 {
             // We're at the start of a new line
@@ -180,6 +305,11 @@ impl<'a> Lexer<'a> {
                 return indent_tokens.remove(0);
             }
         }
+
+        let start_column = self.column;
+        let start_line = self.line;
+
+        self.skip_whitespace();
 
         while let Some(ch) = self.peek() {
             match ch {
@@ -194,42 +324,42 @@ impl<'a> Lexer<'a> {
                     self.column = 0;
                     return Token {
                         token_type: TokenType::Newline,
-                        line: self.line - 1,
+                        line: self.line - 2, 
                         column: self.column,
                     };
                 }
 
                 // Comments or single arrow ->
                 '-' => {
+                    self.advance(); // Consume the first '-'
                     if self.peek() == Some(&'>') {
                         // Single arrow ->
                         self.advance();
                         return Token {
                             token_type: TokenType::Arrow,
                             line: self.line,
-                            column: self.column - 1,
+                            column: self.column - 2,
                         };
-                    } else if self.peek_next() == Some('-') {
-                        self.advance(); // Consume first '-'
+                    } else if self.peek() == Some(&'-') {
                         self.advance(); // Consume second '-'
-                        while let Some(ch) = self.peek() {
-                            // End of comment
-                            if *ch == '\n' || *ch == '\r' {
+                        let mut comment_content = String::new();
+                        while let Some(&ch) = self.peek() {
+                            if ch == '\n' || ch == '\r' {
                                 break;
                             }
+                            comment_content.push(ch);
                             self.advance();
                         }
                         return Token {
-                            token_type: TokenType::Comment,
-                            line: self.line,
-                            column: self.column,
+                            token_type: TokenType::Comment(comment_content.trim().to_string()),
+                            line: start_line,
+                            column: start_column,
                         };
                     } else {
-                        self.advance();
                         return Token {
                             token_type: TokenType::Minus,
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
@@ -241,14 +371,14 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         return Token {
                             token_type: TokenType::ListBraceOpen,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else {
                         return Token {
                             token_type: TokenType::OpenBracket(bracket),
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
@@ -258,46 +388,46 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         return Token {
                             token_type: TokenType::ExprEnd,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                     return Token {
                         token_type: TokenType::CloseBracket(bracket),
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
 
-                // Bitwise operators and pipe
+                // Bitwise operators, pipe, or closing list brace
                 '|' => {
                     self.advance();
                     if self.peek() == Some(&'}') {
                         self.advance();
                         return Token {
                             token_type: TokenType::ListBraceClose,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else if self.peek() == Some(&'>') {
                         self.advance();
                         return Token {
                             token_type: TokenType::Pipe,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else if self.peek() == Some(&'|') {
                         self.advance();
                         return Token {
                             token_type: TokenType::Or,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else {
                         return Token {
                             token_type: TokenType::BitwiseOr,
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
@@ -307,14 +437,14 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         return Token {
                             token_type: TokenType::And,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else {
                         return Token {
                             token_type: TokenType::BitwiseAnd,
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
@@ -322,40 +452,73 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     return Token {
                         token_type: TokenType::BitwiseXor,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '~' => {
                     self.advance();
                     return Token {
                         token_type: TokenType::BitwiseNot,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '<' => {
                     self.advance();
-                    if self.peek() == Some(&'<') {
-                        self.advance();
-                        return Token {
-                            token_type: TokenType::LeftShift,
-                            line: self.line,
-                            column: self.column - 1,
-                        };
-                    } else if self.peek() == Some(&'=') {
-                        self.advance();
-                        return Token {
-                            token_type: TokenType::LessEqual,
-                            line: self.line,
-                            column: self.column - 1,
-                        };
-                    } else {
-                        return Token {
-                            token_type: TokenType::LessThan,
-                            line: self.line,
-                            column: self.column,
-                        };
+                    match self.peek() {
+                        Some(&'<') => {
+                            self.advance();
+                            return Token {
+                                token_type: TokenType::LeftShift,
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
+                        Some(&'=') => {
+                            self.advance();
+                            return Token {
+                                token_type: TokenType::LessEqual,
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
+                        Some(&ch) if ch.is_uppercase() => {
+                            let mut type_identifiers = vec![];
+                            let start_column = self.column;
+
+                            loop {
+                                if let Some(identifier) = self.parse_type_identifier() {
+                                    type_identifiers.push(identifier);
+                                }
+
+                                match self.peek() {
+                                    Some(&',') => {
+                                        self.advance();
+                                        self.skip_whitespace();
+                                    }
+                                    Some(&'>') => {
+                                        self.advance();
+                                        break;
+                                    }
+                                    _ => {
+                                        return self.error_token("Expected ',' or '>' after type identifier", self.line, self.column);
+                                    }
+                                }
+                            }
+                            return Token {
+                                token_type: TokenType::GenericTypeIdentifiers(type_identifiers),
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
+                        _ => {
+                            return Token {
+                                token_type: TokenType::LessThan,
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
                     }
                 }
                 '>' => {
@@ -364,56 +527,69 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         return Token {
                             token_type: TokenType::RightShift,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else if self.peek() == Some(&'=') {
                         self.advance();
                         return Token {
                             token_type: TokenType::GreaterEqual,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else {
                         return Token {
                             token_type: TokenType::GreaterThan,
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
 
+                // Variables
+                '$' => {
+                    self.advance();
+                    if let Some((identifier, _id_start_column)) = self.parse_identifier() {
+                        return Token {
+                            token_type: TokenType::Variable(identifier),
+                            line: start_line,
+                            column: start_column,
+                        }
+                    } else {
+                        return self.error_token("Invalid variable name. Must be in snake_case.", start_line, start_column)
+                    }
+                }
                 // Other operators
                 '+' => {
                     self.advance();
                     return Token {
                         token_type: TokenType::Plus,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '*' => {
                     self.advance();
                     return Token {
                         token_type: TokenType::Multiply,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '/' => {
                     self.advance();
                     return Token {
                         token_type: TokenType::Divide,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '%' => {
                     self.advance();
                     return Token {
                         token_type: TokenType::Modulo,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '=' => {
@@ -422,21 +598,21 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         return Token {
                             token_type: TokenType::Equal,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else if self.peek() == Some(&'>') {
                         self.advance();
                         return Token {
                             token_type: TokenType::FatArrow,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else {
                         return Token {
                             token_type: TokenType::Assign,
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
@@ -446,32 +622,63 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         return Token {
                             token_type: TokenType::NotEqual,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     } else {
                         return Token {
                             token_type: TokenType::Not,
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
                 ':' => {
                     self.advance();
-                    if self.peek() == Some(&'=') {
-                        self.advance();
-                        return Token {
-                            token_type: TokenType::DeclareAssign,
-                            line: self.line,
-                            column: self.column - 1,
-                        };
-                    } else {
-                        return Token {
-                            token_type: TokenType::Colon,
-                            line: self.line,
-                            column: self.column,
-                        };
+                    match self.peek() {
+                        Some(&'=') => {
+                            self.advance();
+                            return Token {
+                                token_type: TokenType::DeclareAssign,
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
+                        Some(&':') => {
+                            self.advance();
+                            return Token {
+                                token_type: TokenType::DoubleColon,
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
+                        Some(&ch) if ch.is_whitespace() || ch.is_uppercase() => {
+                            let mut type_name = String::new();
+
+                            self.skip_whitespace();
+
+                            while let Some(&ch) = self.peek() {
+                                if ch.is_alphanumeric() {
+                                    type_name.push(ch);
+                                    self.advance();
+                                } else {
+                                    break;
+                                }
+                            }
+
+                            return Token {
+                                token_type: TokenType::Type(type_name.trim().to_string()),
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
+                        _ => {
+                            return Token {
+                                token_type: TokenType::Colon,
+                                line: start_line,
+                                column: start_column,
+                            };
+                        }
                     }
                 }
                 // Other tokens
@@ -479,16 +686,16 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     return Token {
                         token_type: TokenType::Comma,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '.' => {
                     self.advance();
                     return Token {
                         token_type: TokenType::Dot,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
                 '#' => {
@@ -497,49 +704,41 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         return Token {
                             token_type: TokenType::ExprStart,
-                            line: self.line,
-                            column: self.column - 1,
+                            line: start_line,
+                            column: start_column,
                         };
                     }
                 }
                 // Identifiers and keywords
-                'a'..='z' | 'A'..='Z' | '_' => {
-                    let mut identifier = String::new();
-                    let start_column = self.column;
+                'a'..='z' | '_' => {
+                    if let Some((identifier, id_start_column)) = self.parse_identifier() {
+                        let token_type = match identifier.as_str() {
+                            "func" => TokenType::Func,
+                            "struct" => TokenType::Struct,
+                            "trait" => TokenType::Trait,
+                            "new" => TokenType::New,
+                            "return" => TokenType::Return,
+                            "constrain" => TokenType::Constrain,
+                            "field" => TokenType::Field,
+                            "method" => TokenType::Method,
+                            "if" => TokenType::If,
+                            "else" => TokenType::Else,
+                            "foreach" => TokenType::Foreach,
+                            "in" => TokenType::In,
+                            "match" => TokenType::Match,
+                            "true" => TokenType::Bool(true),
+                            "false" => TokenType::Bool(false),
+                            _ => TokenType::Identifier(identifier),
+                        };
 
-                    while let Some(&ch) = self.peek() {
-                        if ch.is_alphanumeric() || ch == '_' {
-                            identifier.push(ch);
-                            self.advance();
-                        } else {
-                            break;
+                        return Token {
+                            token_type,
+                            line: start_line,
+                            column: id_start_column,
                         }
+                    } else {
+                        return self.error_token("Invalid identifier. Must be in snake_case.", start_line, start_column)
                     }
-
-                    let token_type = match identifier.as_str() {
-                        "func" => TokenType::Func,
-                        "struct" => TokenType::Struct,
-                        "trait" => TokenType::Trait,
-                        "new" => TokenType::New,
-                        "return" => TokenType::Return,
-                        "constrain" => TokenType::Constrain,
-                        "field" => TokenType::Field,
-                        "method" => TokenType::Method,
-                        "if" => TokenType::If,
-                        "else" => TokenType::Else,
-                        "foreach" => TokenType::Foreach,
-                        "in" => TokenType::In,
-                        "match" => TokenType::Match,
-                        "true" => TokenType::Bool(true),
-                        "false" => TokenType::Bool(false),
-                        _ => TokenType::Identifier(identifier),
-                    };
-                    
-                    return Token {
-                        token_type,
-                        line: self.line,
-                        column: start_column,
-                    };
                 }
 
                 // Numbers
@@ -565,8 +764,8 @@ impl<'a> Lexer<'a> {
                     };
                     return Token {
                         token_type,
-                        line: self.line,
-                        column: self.column - number.len(),
+                        line: start_line,
+                        column: start_column,
                     };
                 }
 
@@ -598,8 +797,8 @@ impl<'a> Lexer<'a> {
                     }
                     return Token {
                         token_type: TokenType::String(string.clone()),
-                        line: self.line,
-                        column: self.column - string.len() - 2,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
 
@@ -608,16 +807,16 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     return Token {
                         token_type: TokenType::EOF,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     };
                 }
             }
         }
         Token {
             token_type: TokenType::EOF,
-            line: self.line,
-            column: self.column,
+            line: start_line,
+            column: start_column,
         }
     }
 }
