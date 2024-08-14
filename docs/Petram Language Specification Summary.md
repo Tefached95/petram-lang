@@ -53,18 +53,20 @@
 
 ## Control Structures
 
-- We support the standard if/else if/else pattern.
+- We support the standard if/else if/else pattern Note that `if` is an expression and must be enclosed in `#[]#` as it returns a value.
   - The `if else` and final `else` are optional
 
-  - ```petra
-    if #[somecond]# ->
+  ```petra
+    #[
+      if #[somecond]# ->
         -- statements, expressions
-    -- optionally
-    else if #[someothercond]# ->
+      -- optionally
+      else if #[someothercond]# ->
+          -- ...
+      -- optionally
+      else ->
         -- ...
-    -- optionally
-    else ->
-        -- ...
+    ]#
     ```
 
 - Loops: `foreach $item in $collection -> ...`
