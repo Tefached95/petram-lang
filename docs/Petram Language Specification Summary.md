@@ -83,6 +83,19 @@ _ := #[
 
 - Loops: `foreach $item in $collection -> ...`
 
+```petra
+-- inferred as List<Int>
+$collection := {|1, 2, 3|}
+
+-- $item is inferred as Int
+foreach $item in $collection ->
+  #[println :: message: "Item: {$item}"]#
+
+-- Prints "Item: 1"
+-- Prints "Item: 2"
+-- Prints "Item: 3"
+```
+
 ## Pattern Matching
 
 Pattern matching is an expression and therefore must be enclosed in `#[]#` as it returns a value.
