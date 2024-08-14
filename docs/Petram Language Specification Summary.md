@@ -69,6 +69,18 @@
     ]#
     ```
 
+- If you don't want to return anything from the `if` expression, you can discard it with the special `_` pattern.
+
+```petra
+_ := #[
+      if #[somecond]# ->
+          -- statements, expressions
+      {- optionally
+      else ->
+          -- ... -}
+    ]#
+```
+
 - Loops: `foreach $item in $collection -> ...`
 
 ## Pattern Matching
