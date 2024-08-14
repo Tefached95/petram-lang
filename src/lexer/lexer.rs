@@ -102,7 +102,7 @@ impl<'a> Lexer<'a> {
         Lexer {
             input: input.chars().peekable(),
             line: 1,
-            column: 0,
+            column: 1,
             indentation_stack: vec![0], // Start with 0 indentation
         }
     }
@@ -124,12 +124,14 @@ impl<'a> Lexer<'a> {
         // FIXME(tefached95) This doesn't work. It consumes the newline and never recognizes indentation.
         let ch = self.input.next();
         if let Some(c) = ch {
+            self.column += 1;
             match c {
                 '\n' => {
                     println!("Newline");
                     self.line += 1;
                     if self.column > 0 {
-                        self.column = *self.indentation_stack.last().unwrap() + 1; // Add 1 for editor navigation
+                        self.column = *self.indentation_stack.last().unwrap() + 1;
+                    // Add 1 for editor navigation
                     } else {
                         self.column = 0;
                     }
@@ -146,11 +148,10 @@ impl<'a> Lexer<'a> {
     fn advance_by(&mut self, amount: usize) {
         for _ in 0..amount {
             if let Some(c) = self.input.next() {
+                self.column += 1;
                 if c == '\n' {
                     self.line += 1;
-                    self.column -= 1;
-                } else {
-                    self.column += 1;
+                    self.column = 0;
                 }
             } else {
                 break;
@@ -324,7 +325,7 @@ impl<'a> Lexer<'a> {
                 '\n' | '\r' => {
                     let token = Token {
                         token_type: TokenType::Newline,
-                        line: self.line, 
+                        line: self.line - 2,
                         column: self.column,
                     };
                     self.advance();
@@ -353,7 +354,9 @@ impl<'a> Lexer<'a> {
                             self.advance();
                         }
                         return Token {
-                            token_type: TokenType::Comment(comment_content.clone().trim().to_string()),
+                            token_type: TokenType::Comment(
+                                comment_content.clone().trim().to_string(),
+                            ),
                             line: start_line,
                             column: start_column + comment_content.len(),
                         };
@@ -504,7 +507,11 @@ impl<'a> Lexer<'a> {
                                         break;
                                     }
                                     _ => {
-                                        return self.error_token("Expected ',' or '>' after type identifier", self.line, self.column);
+                                        return self.error_token(
+                                            "Expected ',' or '>' after type identifier",
+                                            self.line,
+                                            self.column,
+                                        );
                                     }
                                 }
                             }
@@ -556,9 +563,13 @@ impl<'a> Lexer<'a> {
                             token_type: TokenType::Variable(identifier),
                             line: start_line,
                             column: start_column,
-                        }
+                        };
                     } else {
-                        return self.error_token("Invalid variable name. Must be in snake_case.", start_line, start_column)
+                        return self.error_token(
+                            "Invalid variable name. Must be in snake_case.",
+                            start_line,
+                            start_column,
+                        );
                     }
                 }
                 // Other operators
@@ -737,9 +748,13 @@ impl<'a> Lexer<'a> {
                             token_type,
                             line: start_line,
                             column: id_start_column,
-                        }
+                        };
                     } else {
-                        return self.error_token("Invalid identifier. Must be in snake_case.", start_line, start_column)
+                        return self.error_token(
+                            "Invalid identifier. Must be in snake_case.",
+                            start_line,
+                            start_column,
+                        );
                     }
                 }
 
