@@ -1,6 +1,17 @@
 -- Petram Example: Pipe Operator and Method Chaining
 -- File: piping_operator_demo.petra
 
+-- Example struct that will demonstrate method chaining and piping operator with more complex data
+struct #[Person]# ->
+    field name: String
+    field age: Int
+
+    new #[name: String, age: Int]#: Self ->
+        @name = name
+        @age = age
+
+    method #[greet]#: String => "Hello, my name is {@name}!"
+
 func #[main :: args: List<String>]#: Void ->
     -- Define a list of numbers
     $numbers := {|1, 2, 3, 4, 5|}  -- Type inferred as List<Int>
@@ -20,21 +31,10 @@ func #[main :: args: List<String>]#: Void ->
     -- Print the result
     #[print(message: "Result: {$result}")]#
 
-    -- Example with more complex data
-    struct #[Person]# ->
-        field name: String
-        field age: Int
-
-        new #[name: String, age: Int]#: Self ->
-            @name = name
-            @age = age
-
-        method #[greet]#: String => "Hello, my name is {@name}!"
-
     $people: List<Person> = {|
-        #[new Person(name: "Alice", age: 30)]#,
-        #[new Person(name: "Bob", age: 25)]#,
-        #[new Person(name: "Charlie", age: 35)]#
+        #[Person::new :: name: "Alice", age: 30]#,
+        #[Person::new :: name: "Bob", age: 25]#,
+        #[Person::new :: name: "Charlie", age: 35]#
     |}
 
     -- Use |> with method chaining
