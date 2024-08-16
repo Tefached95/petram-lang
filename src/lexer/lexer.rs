@@ -123,7 +123,6 @@ impl<'a> Lexer<'a> {
     fn advance(&mut self) -> Option<char> {
         let ch = self.input.next();
         if let Some(c) = ch {
-            self.column += 1;
             if c == '\n' {
                 self.line += 1;
                 self.column = 0;
