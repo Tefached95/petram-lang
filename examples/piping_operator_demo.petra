@@ -18,18 +18,18 @@ func #[main :: args: List<String>]#: Void ->
 
     {-
         Use the |> operator for method chaining
-        Note how you may omit $numbers within the piped-to expressions when chaining them.
-        It's inferred from the previous expression.
+        Note how we use $_. within the piped-to expressions when chaining them.
+        It refers to the result of the previous expression in the chain.
     -} 
     $result := #[
         $numbers
-        |> #[.map(f: func #[item: Int]#: Int => item * 2)]#
-        |> #[.filter(f: func #[item: Int]#: Bool => item > 5)]#
-        |> #[.reduce(f: func #[acc: Int, item: Int]#: Int => acc + item, initial: 0)]#
+        |> #[$_.map :: f: func #[item: Int]#: Int => item * 2]#
+        |> #[$_.filter :: f: func #[item: Int]#: Bool => item > 5]#
+        |> #[$_.reduce :: f: func #[acc: Int, item: Int]#: Int => acc + item, initial: 0]#
     ]#
 
     -- Print the result
-    #[print(message: "Result: {$result}")]#
+    #[print :: message: "Result: {$result}"]#
 
     $people: List<Person> = {|
         #[Person::new :: name: "Alice", age: 30]#,
@@ -39,12 +39,24 @@ func #[main :: args: List<String>]#: Void ->
 
     -- Use |> with method chaining
     -- The type of $total_age is inferred as Int
-    $total_age := $people
-        |> #[.map(f: func #[person: Person]#: Int => person.age)]#
-        |> #[.reduce(f: func #[acc: Int, age: Int, initial: Int := 0]#: Int => acc + age)]#
+    $total_age := #[
+        $people
+        |> #[$_.map :: f: func #[person: Person]#: Int => person.age]#
+        |> #[$_.reduce :: f: func #[acc: Int, age: Int]#: Int => acc + age, initial: 0]#
+    ]#
 
     -- And $average_age is inferred as Float
     $average_age := #[Float($total_age) / Float(#[$people.length()]#)]#
 
     -- Prints "Average age: 30.0"
-    #[print(message: "Average age: {$average_age}")]#
+    #[print :: message: "Average age: {$average_age}"]#
+
+    -- Demonstrate more complex chaining with $_.
+    $processed_people := #[
+        $people
+        |> #[$_.filter :: f: func #[person: Person]#: Bool => person.age > 25]#
+        |> #[$_.map :: f: func #[person: Person]#: String => person.greet()]#
+        |> #[$_.join :: separator: " "]#
+    ]#
+
+    #[print :: message: "Greetings from older people: {$processed_people}"]#
