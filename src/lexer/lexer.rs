@@ -263,9 +263,6 @@ impl<'a> Lexer<'a> {
                     return None; // Uppercase letters are not allowed
                 }
                 '0'..='9' => {
-                    if identifier.is_empty() {
-                        return None; // Identifiers can't start with a number
-                    }
                     identifier.push(ch);
                     expect_lowercase_or_underscore = true;
                     self.advance();
