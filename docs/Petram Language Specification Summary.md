@@ -127,15 +127,16 @@ $somevar := #[
 - Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
 - Logical: `and`, `or`, `not`
 - Pipe: `|>` for method chaining
-  - When piping to other functions, the previous variable's name may be omitted:
+  - When piping to other functions, use `$_.` to refer to the piped value:
 
   ```petra
     $numbers := {|1, 2, 3|} -- List<Int>
   
     $times_two_squared_divided_by_three := #[
-      $numbers.map(f: func #[num: Int]: Int => num * 2)
-      |> #[.map(f: func #[num: Int]: Int => num * num)]
-      |> #[.map(f: func #[num: Int]: Float => num / 3)]
+      $numbers
+      |> #[$_.map :: f: func #[num: Int]#: Int => num * 2]#
+      |> #[$_.map :: f: func #[num: Int]#: Int => num * num]#
+      |> #[$_.map :: f: func #[num: Int]#: Float => num / 3]#
     ]#
 
     -- result: {|1.3333333333333333, 5.333333333333333, 12|}
@@ -157,5 +158,6 @@ $somevar := #[
 - Constraint-based field validation in structs
 - Explicit expression syntax with `#[ ]#`
 - Strong emphasis on compile-time checks and constraints
+- PowerShell-inspired `$_.` syntax for method chaining in pipe operations
 
 Note: Petram prioritizes explicitness, verbosity, and robustness. It's designed as a general-purpose, low-level language capable of targeting multiple architectures, with a focus on data-oriented design and compile-time safety.
