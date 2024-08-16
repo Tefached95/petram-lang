@@ -250,13 +250,11 @@ impl<'a> Lexer<'a> {
     fn parse_identifier(&mut self) -> Option<(String, usize)> {
         let mut identifier = String::new();
         let start_column = self.column;
-        let mut expect_lowercase_or_underscore = true;
 
         while let Some(&ch) = self.peek() {
             match ch {
                 'a'..='z' => {
                     identifier.push(ch);
-                    expect_lowercase_or_underscore = true;
                     self.advance();
                 }
                 'A'..='Z' => {
@@ -264,15 +262,10 @@ impl<'a> Lexer<'a> {
                 }
                 '0'..='9' => {
                     identifier.push(ch);
-                    expect_lowercase_or_underscore = true;
                     self.advance();
                 }
                 '_' => {
-                    if !expect_lowercase_or_underscore || identifier.ends_with('_') {
-                        return None; // Consecutive underscores or underscore after a number are not allowed
-                    }
                     identifier.push(ch);
-                    expect_lowercase_or_underscore = false;
                     self.advance();
                 }
                 _ => break,
