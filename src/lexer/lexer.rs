@@ -121,13 +121,23 @@ impl<'a> Lexer<'a> {
     }
 
     fn advance(&mut self) -> Option<char> {
+        // FIXME(tefached95) This doesn't work. It consumes the newline and never recognizes indentation.
         let ch = self.input.next();
         if let Some(c) = ch {
-            if c == '\n' {
-                self.line += 1;
-                self.column = 0;
-            } else {
-                self.column += 1;
+            match c {
+                '\n' => {
+                    println!("Newline");
+                    self.line += 1;
+                    if self.column > 0 {
+                        self.column = *self.indentation_stack.last().unwrap() + 1; // Add 1 for editor navigation
+                    } else {
+                        self.column = 0;
+                    }
+                    println!("Column: {}", self.column);
+                }
+                _ => {
+                    self.column += 1;
+                }
             }
         }
         ch
@@ -138,7 +148,7 @@ impl<'a> Lexer<'a> {
             if let Some(c) = self.input.next() {
                 if c == '\n' {
                     self.line += 1;
-                    self.column = 0;
+                    self.column -= 1;
                 } else {
                     self.column += 1;
                 }
@@ -166,7 +176,7 @@ impl<'a> Lexer<'a> {
 
     fn skip_whitespace(&mut self) {
         while let Some(&ch) = self.peek() {
-            if ch.is_whitespace() && ch != '\n' {
+            if ch.is_whitespace() && ch != '\n' && ch != '\r' {
                 self.advance();
             } else {
                 break;
@@ -196,6 +206,7 @@ impl<'a> Lexer<'a> {
 
         if spaces > current_indent {
             // Indentation increased
+            println!("Indentation increased to {}", spaces);
             self.indentation_stack.push(spaces);
             tokens.push(Token {
                 token_type: TokenType::Indent,
@@ -204,6 +215,7 @@ impl<'a> Lexer<'a> {
             });
         } else if spaces < current_indent {
             // Indentation decreased
+            println!("Indentation decreased to {}", spaces);
             while spaces < *self.indentation_stack.last().unwrap() {
                 self.indentation_stack.pop();
                 tokens.push(Token {
@@ -257,6 +269,7 @@ impl<'a> Lexer<'a> {
                     identifier.push(ch);
                     self.advance();
                 }
+                // TODO(tefached95) Should this be allowed?
                 'A'..='Z' => {
                     return None; // Uppercase letters are not allowed
                 }
@@ -303,18 +316,19 @@ impl<'a> Lexer<'a> {
 
         while let Some(ch) = self.peek() {
             match ch {
-                // Whitespace
+                //Whitespace
                 ' ' | '\t' => {
                     self.advance();
                     continue;
                 }
                 '\n' | '\r' => {
-                    self.advance();
-                    return Token {
+                    let token = Token {
                         token_type: TokenType::Newline,
-                        line: self.line - 2, 
+                        line: self.line, 
                         column: self.column,
                     };
+                    self.advance();
+                    return token;
                 }
 
                 // Comments or single arrow ->
@@ -326,7 +340,7 @@ impl<'a> Lexer<'a> {
                         return Token {
                             token_type: TokenType::Arrow,
                             line: self.line,
-                            column: self.column - 2,
+                            column: self.column,
                         };
                     } else if self.peek() == Some(&'-') {
                         self.advance(); // Consume second '-'
@@ -339,7 +353,7 @@ impl<'a> Lexer<'a> {
                             self.advance();
                         }
                         return Token {
-                            token_type: TokenType::Comment(comment_content.trim().to_string()),
+                            token_type: TokenType::Comment(comment_content.clone().trim().to_string()),
                             line: start_line,
                             column: start_column + comment_content.len(),
                         };
