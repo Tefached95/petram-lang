@@ -272,7 +272,7 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        if identifier.is_empty() || identifier.ends_with('_') {
+        if identifier.is_empty() {
             None
         } else {
             Some((identifier, start_column))
