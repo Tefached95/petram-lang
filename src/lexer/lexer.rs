@@ -136,10 +136,11 @@ impl<'a> Lexer<'a> {
     fn advance_by(&mut self, amount: usize) {
         for _ in 0..amount {
             if let Some(c) = self.input.next() {
-                self.column += 1;
                 if c == '\n' {
                     self.line += 1;
                     self.column = 0;
+                } else {
+                    self.column += 1;
                 }
             } else {
                 break;
