@@ -310,8 +310,6 @@ impl<'a> Lexer<'a> {
                 }
                 '\n' | '\r' => {
                     self.advance();
-                    self.line += 1;
-                    self.column = 0;
                     return Token {
                         token_type: TokenType::Newline,
                         line: self.line - 2, 
