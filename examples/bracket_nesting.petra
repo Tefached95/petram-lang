@@ -1,6 +1,6 @@
 -- File: bracket_nesting_demo.petra
 
-func #[main :: args: List<String>]#: () ->
+func #{main :: args: List<String>}#: () ->
     -- Define a nested list of numbers
     $nested_numbers := {|
         {|1, 2, 3|},
@@ -9,36 +9,36 @@ func #[main :: args: List<String>]#: () ->
     |}  -- Type inferred as List<List<Int>>
 
     -- Accessing elements in nested lists
-    $first_element := #[nested_numbers[0][0]]#  -- Should be 1
-    $second_element := #[nested_numbers[1][1]]#  -- Should be 5
-    $third_element := #[nested_numbers[2][2]]#  -- Should be 9
+    $first_element := #{nested_numbers[0][0]}#  -- Should be 1
+    $second_element := #{nested_numbers[1][1]}#  -- Should be 5
+    $third_element := #{nested_numbers[2][2]}#  -- Should be 9
 
     -- Print the accessed elements
-    #[print(message: "First element: {$first_element}")]#
-    #[print(message: "Second element: {$second_element}")]#
-    #[print(message: "Third element: {$third_element}")]#
+    #{print(message: "First element: {$first_element}")}#
+    #{print(message: "Second element: {$second_element}")}#
+    #{print(message: "Third element: {$third_element}")}#
 
     -- Define a nested struct
-    struct #[Outer]# ->
+    struct #{Outer}# ->
         field inner: Inner
 
-        new #[inner: Inner]#: Self ->
+        new #{inner: Inner}#: Self ->
             @inner = inner
 
-        struct #[Inner]# ->
+        struct #{Inner}# ->
             field value: Int
 
-            new #[value: Int]#: Self ->
+            new #{value: Int}#: Self ->
                 @value = value
 
     -- Instantiate the nested struct
-    $outer := #[Outer::new :: inner: #[Outer::Inner::new :: value: 42]#]#
+    $outer := #{Outer::new :: inner: #{Outer::Inner::new :: value: 42}#}#
 
     -- Access the nested value
-    $nested_value := #[outer.inner.value]#
+    $nested_value := #{outer.inner.value}#
 
     -- Print the nested value
-    #[print(message: "Nested value: {$nested_value}")]#
+    #{print(message: "Nested value: {$nested_value}")}#
 
     ()
 

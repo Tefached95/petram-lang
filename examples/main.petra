@@ -3,14 +3,14 @@
     This is a multiline comment.
     We can use this to use docblocks for describing function parameters and return types.
 -}
-func #[add_two_integers :: a: Int, b: Int]#: Int => a + b
+func #{add_two_integers :: a: Int, b: Int}#: Int => a + b
 
 -- We also have lambda expressions
-func #[add_two_integers_lambda :: a: Int, b: Int]#: Int => a + b
+func #{add_two_integers_lambda :: a: Int, b: Int}#: Int => a + b
 
-func #[divide_two_integers :: dividend: Int, divisor: Int]#: Result<Int, DivisonByZeroError> ->
-    if #[divisor == 0]# ->
-        #[println :: message: "Divisor must not be 0."]#
+func #{divide_two_integers :: dividend: Int, divisor: Int}#: Result<Int, DivisonByZeroError> ->
+    if #{divisor == 0}# ->
+        #{println :: message: "Divisor must not be 0."}#
         return Result::Error(DivisonByZeroError)
     else ->
         return Result::Ok(dividend / divisor)
@@ -22,30 +22,30 @@ func #[divide_two_integers :: dividend: Int, divisor: Int]#: Result<Int, Divison
     Self::constraints.<field name>. This is a function that returns a Bool.
     NOTE: If you add one or more constraints to a struct, the return type of the constructor changes from Self to Result<Self, String>, and you must use pattern matching for Ok(value) or Error(error_message)
 -}
-struct #[Square]# ->
+struct #{Square}# ->
     field side_length: Int
 
-    constrain side_length: Int where #[side_length > 0]#
+    constrain side_length: Int where #{side_length > 0}#
         message: "Side of a square must be greater than 0."
 
-    new #[side_length: Int]#: Result<Self, String> ->
+    new #{side_length: Int}#: Result<Self, String> ->
         -- Constraints are automatically checked here.
         -- If a constraint fails, Result::Error() is returned with the message defined in the constraint.
         -- Otherwise it is Result::Ok(Self), in this instance Result::Ok(Square)
         @side_length = side_length
 
-    method #[calculate_area]#: Int => @side_length * @side_length
+    method #{calculate_area}#: Int => @side_length * @side_length
 
-    method #[set_side_length :: new_length: Int]#: Result<(), SizeError> ->
+    method #{set_side_length :: new_length: Int}#: Result<(), SizeError> ->
         -- You can manually check constraints
-        if #[Self::constraints.side_length(new_length)]# ->
+        if #{Self::constraints.side_length(new_length)}# ->
             @side_length = new_length
             return Result::Ok(())
         else ->
             return Result::Error(SizeError)
 
 -- This is a single line comment.
-func #[main :: args: List<String>]#: Int ->
+func #{main :: args: List<String>}#: Int ->
     -- Simple variable declaration with type inferrence
     $a := 3
 
@@ -53,28 +53,28 @@ func #[main :: args: List<String>]#: Int ->
     $b: Int = 4
     
     -- Assignment via function call, with implicit and explicit types
-    $res := #[add_two_integers :: a: $a, b: $b]#
-    $res2: Int = #[add_two_integers_lambda :: a: $a, b: $b]#
+    $res := #{add_two_integers :: a: $a, b: $b}#
+    $res2: Int = #{add_two_integers_lambda :: a: $a, b: $b}#
 
     -- Instantiate a struct, which can potentially fail
     -- `match` is an expression, so it returns a value, like in Rust.
     $square :=
-        #[
-            match #[Square::new :: side_length: 5]# ->
+        #{
+            match #{Square::new :: side_length: 5}# ->
                 Option::Some($s) ->
-                    #[println :: message: "Square created successfully"]#
+                    #{println :: message: "Square created successfully"}#
                     return Option::Some($s)
                 Option::None() ->
-                    #[println :: message: "Error: {$error}"]#
+                    #{println :: message: "Error: {$error}"}#
                     return Option::None
-        ]#
+        }#
 
-    match #[Square::new :: side_length: -1]# ->
+    match #{Square::new :: side_length: -1}# ->
         Option::Some(_) ->
             return 1 -- should never happen
         Option::None($error) ->
-            #[println :: message: "Error as expected: {$error}"]#
+            #{println :: message: "Error as expected: {$error}"}#
 
     -- Print the result
-    #[println :: message "{$a} + {$b} = {$res}"]#
+    #{println :: message "{$a} + {$b} = {$res}"}#
     return 0
