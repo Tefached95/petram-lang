@@ -47,7 +47,8 @@
 - Traits: `trait #{Name}# ->`
   - Traits are similar to Protocols in Objective C or interfaces in other OO programming languages.
 - Fields: `field name: Type`
-- Constrained fields: `constrain struct_field_name: Type where #{condition}# message: "Error message"`
+- Constrained fields
+  - You may define a constrained filed via the following syntax: `constrained field struct_field_name: Type where #{condition}# message: "Error message"`
   - If you introduce one or more constraints to your struct, then the return type of the `new #{}#` constructor changes from `Self` to `Result<Self, String>`, and you must pattern match on it. The string will be the error message you've defined in that particular constraint.
 - Trait implementation and other struct inheritance: `struct #{Rectangle < Shape, Printable}# ->`
 
