@@ -23,12 +23,17 @@ func #{divide_two_integers :: dividend: Int, divisor: Int}#: Result<Int, Divison
     NOTE: If you add one or more constraints to a struct, the return type of the constructor changes from Self to Result<Self, String>, and you must use pattern matching for Ok(value) or Error(error_message)
 -}
 struct #{Square}# ->
-    field side_length: Int
+    -- This is a simple field declaration
+    field funny_name: String
 
-    constrain side_length: Int where #{side_length > 0}#
-        message: "Side of a square must be greater than 0."
+    -- This is a constrained field
+    constrained field side_length: Int
+        where #{side_length > 0}#
+        with message: "Side of a square must be greater than 0."
 
-    new #{side_length: Int}#: Result<Self, String> ->
+    new #{funny_name: String, side_length: Int}#: Result<Self, String> ->
+        @funny_name = funny_name
+
         -- Constraints are automatically checked here.
         -- If a constraint fails, Result::Error() is returned with the message defined in the constraint.
         -- Otherwise it is Result::Ok(Self), in this instance Result::Ok(Square)
@@ -38,11 +43,12 @@ struct #{Square}# ->
 
     method #{set_side_length :: new_length: Int}#: Result<(), SizeError> ->
         -- You can manually check constraints
-        if #{Self::constraints.side_length(new_length)}# ->
+        _ := #{if #{Self::constraints.side_length(new_length)}# ->
             @side_length = new_length
             return Result::Ok(())
         else ->
             return Result::Error(SizeError)
+        }#
 
 -- This is a single line comment.
 func #{main :: args: List<String>}#: Int ->
@@ -69,11 +75,14 @@ func #{main :: args: List<String>}#: Int ->
                     return Option::None
         }#
 
-    match #{Square::new :: side_length: -1}# ->
-        Option::Some(_) ->
-            return 1 -- should never happen
-        Option::None($error) ->
-            #{println :: message: "Error as expected: {$error}"}#
+    -- Discard return values with _
+    _ := #{
+        match #{Square::new :: side_length: -1}# ->
+            Option::Some(_) ->
+                return 1 -- should never happen
+            Option::None($error) ->
+                #{println :: message: "Error as expected: {$error}"}#
+    }#
 
     -- Print the result
     #{println :: message "{$a} + {$b} = {$res}"}#
