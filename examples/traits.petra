@@ -35,9 +35,9 @@ struct #{DoesNotImplementPrintable}# ->
 
 func #{main :: args: List<String>}#: () ->
     $rectangles := {|
-        #{Rectangle::new :: width: 3.0, height: 4.0)}#,
-        #{Rectangle::new :: width: 2.5, height: 5.0)}#,
-        #{Rectangle::new :: width: 1.0, height: 10.0)}#
+        #{Rectangle::new :: width: 3.0, height: 4.0}#,
+        #{Rectangle::new :: width: 2.5, height: 5.0}#,
+        #{Rectangle::new :: width: 1.0, height: 10.0}#
     |}
 
     -- This will not work
