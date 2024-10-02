@@ -5,22 +5,22 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github Tefached95/petram-lang))
 
-(authors "Author Name")
+(authors "Tefached95")
 
-(maintainers "Maintainer Name")
+(maintainers "Tefached95")
 
-(license LICENSE)
+(license MIT)
 
 (documentation https://url/to/documentation)
 
 (package
  (name petram)
- (synopsis "A short synopsis")
- (description "A longer description")
+ (synopsis "Chiseled for clarity")
+ (description "Petram is a programming language designed for clarity, simplicity, and expressiveness. It has verbosity as a feature, and several functional influences.")
  (depends ocaml dune)
  (tags
-  (topics "to describe" your project)))
+  (language functional)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html
