@@ -151,7 +151,7 @@ $somevar := #{
 
 ## Lists and Collections
 
-- Lists are enclosed in `{| |}
+- Lists are enclosed in `{| |}`
 - `$numbers := {|1, 2, 3, 4, 5|} -- inferred as List<Int>`
 
 ## Unique Features
