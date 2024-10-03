@@ -4,3 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+
+[[bin]]
+name = "petram"
+path = "src/main.rs"
+
+[lib]
+name = "petram"
+path = "lib/lib.rs"
