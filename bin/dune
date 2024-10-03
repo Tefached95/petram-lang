@@ -1,4 +1,0 @@
-(executable
- (public_name petram)
- (name main)
- (libraries petram))
