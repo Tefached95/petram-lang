@@ -1,0 +1,76 @@
+func #{main :: args: List<String>}#: () ->
+    $board := #{List::new(3) :: item: #{List::new(3) :: item: " "}}#
+    $current_player := "X"
+    $winner := Option::None
+    $moves := 0
+
+    while #{is_none :: opt: $winner}# and $moves < 9 ->
+        #{print_board :: board: $board}#
+        $row := #{get_move :: prompt: "Row (0, 1, or 2): "}#
+        $col := #{get_move :: prompt: "Column (0, 1, or 2): "}#
+        
+        _ := #{
+            if #{valid_move? :: board: $board, row: $row, col: $col}# ->
+                $board[$row][$col] := $current_player
+                $moves := $moves + 1
+                $winner := #{check_winner :: board: $board, player: $current_player}#
+                $current_player := #{switch_player :: current_player: $current_player}#
+            else ->
+                #{println :: message: "Invalid move. Try again."}#
+        }#
+    
+    #{print_board :: board: $board}#
+    $message := #{
+        match $winner ->
+            Option::Some($winner) -> "Player {$winner} wins!"
+            Option::None -> "It's a tie!"
+    }#
+    #{println :: message: $message}#
+
+-- Helper function to print the board
+func #{print_board :: board: List<List<String>>}#: () ->
+    foreach $row in $board ->
+        #{println :: message: " | ".join($row)}#
+        #{println :: message: "---------"}#
+
+-- Helper function to get a valid move from the user
+func #{get_move :: prompt: String}#: Result<Int, String> ->
+    $input_val := #{input :: prompt: $prompt}#
+    #{to_int :: value: $input_val}#
+
+-- Helper function to check if a move is valid
+func #{valid_move? :: board: List<List<String>>, row: Int, col: Int}#: Bool ->
+    #{0 <= $row && $row < 3 && 0 <= $col && $col < 3 && $board[$row][$col] == " "}#
+
+-- Helper function to switch between players
+func #{switch_player :: current_player: String}#: String ->
+    #{
+        match $current_player ->
+            "X" -> "O"
+            "O" -> "X"
+            _ -> panic("Invalid player")
+    }#
+
+-- Helper function to check for a winner
+func #{check_winner :: board: List<List<String>>, player: String}#: Option<String> ->
+    -- Check rows, columns, and diagonals
+    foreach $i in #{List::range :: start: 0, end: 3}# ->
+        $winner := #{
+            if #{$board[$i][0] == $player && $board[$i][1] == $player && $board[$i][2] == $player ||
+                $board[0][$i] == $player && $board[1][$i] == $player && $board[2][$i] == $player}# ->
+                Option::Some($player)
+            else ->
+                Option::None
+        }#
+        #{
+            if #{is_none :: opt: $winner}# == false ->
+                return $winner
+        }#
+
+    #{
+        if #{$board[0][0] == $player && $board[1][1] == $player && $board[2][2] == $player ||
+            $board[0][2] == $player && $board[1][1] == $player && $board[2][0] == $player}# ->
+            Option::Some($player)
+        else ->
+            Option::None
+    }#
