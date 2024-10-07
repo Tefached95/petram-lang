@@ -1,4 +1,4 @@
 -- This is a comment!
 func #{main :: args: List<String>}#: Int ->
-	$a: Int = 0
-	return $a
+	#{println :: message: "Hello, world!"}#
+	return 0
