@@ -1,4 +1,5 @@
-pub enum Token {
+#[derive(Debug)]
+pub enum TokenType {
     // Types
     Int8,
     Int16,
@@ -87,10 +88,16 @@ pub enum Token {
 }
 
 #[derive(Debug)]
-pub struct Lexer {
-    source: String,
+pub struct Token {
+    token_type: TokenType,
     line: usize,
     column: usize,
+}
+
+#[derive(Debug)]
+pub struct Lexer {
+    source: String,
+    tokens: Vec<Token>,
     indentation_stack: Vec<usize>,
 }
 
@@ -98,9 +105,31 @@ impl Lexer {
     pub fn new(source: String) -> Self {
         Self {
             source,
-            line: 1,
-            column: 1,
+            tokens: vec![],
             indentation_stack: vec![0],
         }
+    }
+
+    pub fn next_token(&mut self) -> Option<Token> {
+        let mut line = 1;
+        let mut column = 1;
+
+        while let Some(c) = self.peek_next() {
+            match c {
+                _ => {
+                    return Some(Token {
+                        token_type: TokenType::EOF,
+                        line: 0,
+                        column: 0,
+                    })
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn peek_next(&self) -> Option<char> {
+        self.source.chars().peekable().peek().copied()
     }
 }
