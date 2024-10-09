@@ -19,7 +19,7 @@ fn main() -> Result<(), std::io::Error> {
     println!("Program path: {}", program_path.display());
 
     if let Ok(source) = std::fs::read_to_string(program_path) {
-        let lexer = lexer::Lexer::new(source);
+        let lexer = lexer::Lexer::new(&source);
         println!("{:#?}", lexer);
         return Ok(());
     } else {
