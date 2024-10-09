@@ -25,7 +25,14 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 ## Functions
 
 - Function definition: `func #{function_name ~> param1: Type, param2: OtherType, ..., $paramN: TypeN}#: ReturnType ->`
-- Single-expression functions: `=>`
+
+```petra
+func #{greet_user ~> name: String}#: () ->
+    #{println ~> message: "Hello, {name}!"}#
+    return ()
+```
+
+- Single-expression functions: `func #{add_two ~> a: Int, b: Int}#: Int => a + b`
 - Function call: `#{function_name ~> arg1: value1, arg2: value2}#`
   - Named arguments must always be used in the function call.
 - Argument names must always be provided.
