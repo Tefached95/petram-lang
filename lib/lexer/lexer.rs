@@ -71,6 +71,10 @@ pub enum TokenType {
     Whitespace,
     DoubleColon,
 
+    // Indentation
+    Indent,
+    Dedent,
+
     // Identifiers
     Variable(String),
     FunctionName(String),
@@ -144,5 +148,47 @@ impl<'a> Lexer<'a> {
             amt += 1;
         }
         self.advance_by(amt);
+    }
+
+    pub fn handle_indentation(&mut self) {
+        let mut indent_level = 0;
+        
+        while let Some(c) = self.peek_next() {
+            match c {
+                ' ' => {
+                    self.advance_by(1);
+                    indent_level += 1;
+                }
+                '\t' => {
+                    self.advance_by(4);
+                    indent_level += 4;
+                }
+                _ => break,
+            }
+        }
+
+        let mut current_indent = self.indentation_stack.last().unwrap();
+        
+        if indent_level > *current_indent {
+            self.indentation_stack.push(indent_level);
+            self.tokens.push(Token {
+                token_type: TokenType::Indent,
+                line: self.line,
+                column: self.column,
+            });
+        } else if indent_level < *current_indent {
+            while indent_level < *current_indent {
+                self.indentation_stack.pop();
+                self.tokens.push(Token {
+                    token_type: TokenType::Dedent,
+                    line: self.line,
+                    column: self.column,
+                });
+                current_indent = self.indentation_stack.last().unwrap();
+            }
+        } else {
+            eprintln!("Error: Invalid indentation level on line {}", self.line);
+            std::process::exit(1);
+        }
     }
 }
