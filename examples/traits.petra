@@ -1,0 +1,61 @@
+-- How traits work in Petram
+
+-- A trait is pretty similar to Rust's traits. It's a definition of methods that a deriving struct must implement.
+-- It also allows for constraints on generics.
+trait #{Printable}# ->
+    method #{to_string}#: String
+
+struct #{Rectangle < Printable}# ->
+    field width: Float
+    field height: Float
+
+    new #{width: Float, height: Float}#: Self ->
+        @width = width
+        @height = height
+
+    method #{area}#: Float => @width * @height
+
+    method #{to_string}#: String => "Rectangle({@width} x {@height})"
+
+-- Here we demonstrate how to constrain a generic parameter where it must implement a trait
+struct #{PrintableHolder<T>}# where T < Printable ->
+    field item: T
+
+    new #{item: T}#: Self ->
+        @item = item
+
+    -- In this method, since we know that T derives from Printable, we can call .to_string() on it.
+    method #{print_containing_item}#: String => #{item.to_string()}#
+
+struct #{DoesNotImplementPrintable}# ->
+    field n: Int
+
+    new #{number: Int}#: Self ->
+        @n = number
+
+func #{main ~> args: List<String>}#: () ->
+    $rectangles := {|
+        #{Rectangle::new ~> width: 3.0, height: 4.0}#,
+        #{Rectangle::new ~> width: 2.5, height: 5.0}#,
+        #{Rectangle::new ~> width: 1.0, height: 10.0}#
+    |}
+
+    -- This will not work
+    -- $whoops := #{PrintableHolder::new ~> item: #{DoesNotImplementPrintable::new ~> number: 3}#}#
+    -- ERROR: Cannot instantiate PrintableHolder<T> with `DoesNotImplementPrintable`.
+    --        `DoesNotImplementPrintable` does not derive the trait `Printable`.
+
+    -- Use |> with a mix of built-in and custom methods
+    $large_areas := $rectangles
+        |> #{.map(f: func #{rect: Rectangle}#: Float => #{rect.area()}#)}#
+        |> #{.filter(f: func #{area: Float}#: Bool => area > 10.0)}#
+        |> #{.for_each(f: func #{area: Float}#: Void => #{print(message: "Large rectangle area: {area}")}#)}#
+
+    -- Chaining with the to_string method
+    $rectangle_descriptions := $rectangles
+        |> #{.map(f: func #{rect: Rectangle}#: String => #{rect.to_string()}#)}#
+        |> #{.join(separator: ", ")}#
+
+    #{print(message: "Rectangles: {$rectangle_descriptions}")}#
+    -- Implicit unit return
+    () 

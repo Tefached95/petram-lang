@@ -1,0 +1,62 @@
+-- Petram Example: Pipe Operator and Method Chaining
+-- File: piping_operator_demo.petra
+
+-- Example struct that will demonstrate method chaining and piping operator with more complex data
+struct #{Person}# ->
+    field name: String
+    field age: Int
+
+    new #{name: String, age: Int}#: Self ->
+        @name = name
+        @age = age
+
+    method #{greet}#: String => "Hello, my name is {@name}!"
+
+func #{main ~> args: List<String>}#: Void ->
+    -- Define a list of numbers
+    $numbers := {|1, 2, 3, 4, 5|}  -- Type inferred as List<Int>
+
+    {-
+        Use the |> operator for method chaining
+        Note how we use $_. within the piped-to expressions when chaining them.
+        It refers to the result of the previous expression in the chain.
+    -} 
+    $result := #{
+        $numbers
+        |> #{$_.map ~> f: func #{item: Int}#: Int => item * 2}#
+        |> #{$_.filter ~> f: func #{item: Int}#: Bool => item > 5}#
+        |> #{$_.reduce ~> f: func #{acc: Int, item: Int}#: Int => acc + item, initial: 0}#
+    }#
+
+    -- Print the result
+    #{print ~> message: "Result: {$result}"}#
+
+    $people: List<Person> = {|
+        #{Person::new ~> name: "Alice", age: 30}#,
+        #{Person::new ~> name: "Bob", age: 25}#,
+        #{Person::new ~> name: "Charlie", age: 35}#
+    |}
+
+    -- Use |> with method chaining
+    -- The type of $total_age is inferred as Int
+    $total_age := #{
+        $people
+        |> #{$_.map ~> f: func #{person: Person}#: Int => person.age}#
+        |> #{$_.reduce ~> f: func #{acc: Int, age: Int}#: Int => acc + age, initial: 0}#
+    }#
+
+    -- And $average_age is inferred as Float
+    $average_age := #{Float($total_age) / Float(#{$people.length()}#)}#
+
+    -- Prints "Average age: 30.0"
+    #{print ~> message: "Average age: {$average_age}"}#
+
+    -- Demonstrate more complex chaining with $_.
+    $processed_people := #{
+        $people
+        |> #{$_.filter ~> f: func #{person: Person}#: Bool => person.age > 25}#
+        |> #{$_.map ~> f: func #{person: Person}#: String => person.greet()}#
+        |> #{$_.join ~> separator: " "}#
+    }#
+
+    #{print ~> message: "Greetings from older people: {$processed_people}"}#

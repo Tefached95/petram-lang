@@ -1,0 +1,60 @@
+-- File: geometry/two_dimensional.petra
+
+#{module :: Geometry::TwoDimensional}#
+
+struct #{Point}# ->
+    field x: Float
+    field y: Float
+
+    new #{x: Float, y: Float}#: Self ->
+        @x = x
+        @y = y
+
+struct #{Rectangle}# ->
+    field top_left: Point
+    field bottom_right: Point
+
+    new #{top_left: Point, bottom_right: Point}#: Self ->
+        @top_left = top_left
+        @bottom_right = bottom_right
+
+    method #{area}#: Float ->
+        $width := @bottom_right.x - @top_left.x
+        $height := @top_left.y - @bottom_right.y
+        return width * height
+
+-- File: geometry/three_dimensional.petra
+
+#{module :: Geometry::ThreeDimensional}#
+
+struct #{Point3D}# ->
+    field x: Float
+    field y: Float
+    field z: Float
+
+    new #{x: Float, y: Float, z: Float}#: Self ->
+        @x = x
+        @y = y
+        @z = z
+
+-- File: main.petra
+
+#{module :: Main}#
+
+#{import :: Geometry::TwoDimensional as TwoD}#
+#{import :: Geometry::ThreeDimensional::Point3D}#
+
+func #{main ~> args: List<String>}#: () ->
+    $point := #{TwoD::Point::new ~> x: 0.0, y: 0.0}#
+    $rect := #{TwoD::Rectangle::new ~> 
+        top_left: #{TwoD::Point::new ~> x: 0.0, y: 5.0}#,
+        bottom_right: #{TwoD::Point::new ~> x: 10.0, y: 0.0}#
+    }#
+
+    $area := #{rect.area()}#
+    #{println ~> message: "Rectangle area: {$area}"}#
+
+    $point3d := #{Point3D::new ~> x: 1.0, y: 2.0, z: 3.0}#
+    #{println ~> message: "3D Point: ({$point3d.x}, {$point3d.y}, {$point3d.z})"}#
+
+    ()
