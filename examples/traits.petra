@@ -47,15 +47,14 @@ func #{main ~> args: List<String>}#: () ->
 
     -- Use |> with a mix of built-in and custom methods
     $large_areas := $rectangles
-        |> #{.map(f: func #{rect: Rectangle}#: Float => #{rect.area()}#)}#
-        |> #{.filter(f: func #{area: Float}#: Bool => area > 10.0)}#
-        |> #{.for_each(f: func #{area: Float}#: Void => #{print(message: "Large rectangle area: {area}")}#)}#
+        |> #{$_.map ~> f: func #{rect: Rectangle}#: Float => #{rect.area()}#}#
+        |> #{$_.filter ~> f: func #{area: Float}#: Bool => area > 10.0}#
+        |> #{$_.for_each ~> f: func #{area: Float}#: Void => #{print(message: "Large rectangle area: {area}")}#}#
 
     -- Chaining with the to_string method
     $rectangle_descriptions := $rectangles
-        |> #{.map(f: func #{rect: Rectangle}#: String => #{rect.to_string()}#)}#
-        |> #{.join(separator: ", ")}#
+        |> #{$_.map ~> f: func #{rect: Rectangle}#: String => #{rect.to_string()}#)}#
+        |> #{$_.join ~> separator: ", "}#
 
-    #{print(message: "Rectangles: {$rectangle_descriptions}")}#
-    -- Implicit unit return
+    #{println ~> message: "Rectangles: {$rectangle_descriptions}"}#
     () 

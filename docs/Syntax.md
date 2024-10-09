@@ -24,7 +24,7 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 
 ## Functions
 
-- Function definition: `func #{name :: param1: Type, param2: OtherType, ..., $paramN: TypeN}#: ReturnType ->`
+- Function definition: `func #{name ~> param1: Type, param2: OtherType, ..., $paramN: TypeN}#: ReturnType ->`
 - Single-expression functions: `=>`
 - Function call: `#{function_name(arg1: value1, arg2: value2)}#`
   - Named arguments must always be used in the function call.
@@ -33,6 +33,7 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 ## Structs
 
 - Struct definition:
+
   - ```petra
       struct #{StructName}# ->
         field field_name: Type
@@ -40,9 +41,11 @@ Petram is a statically typed language with type inference. It is whitespace-sign
         new #{arg_name: Type}#: Self ->
           @field_name = arg_name
     ```
+
 - Constructor: `new #{arg1: Type1, $arg2: Type2, ..., $argN: TypeN}#: Self`
-- Instantiation: `#{StructName::new :: arg1: value1, arg2: value2, ..., argN: valueN}#`
+- Instantiation: `#{StructName::new ~> arg1: value1, arg2: value2, ..., argN: valueN}#`
 - Constrained fields:
+
   - ```petra
       struct #{StructName}# ->
         constrained field field_name: Type
@@ -51,6 +54,7 @@ Petram is a statically typed language with type inference. It is whitespace-sign
         new #{arg_name: Type}#: Result<Self, String> ->
           @field_name = arg_name
     ```
+
   - If you introduce one or more constrained fields to your struct, then the return type of the `new #{}#` constructor must be `Result<Self, String>`.
   - You must pattern match on the result of the constructor to check for errors.
   - The error string will be the message you've defined in that particular constraint.
@@ -59,10 +63,12 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 ## Protocols
 
 - Protocol definition:
+
   - ```petra
       protocol #{ProtocolName}# ->
         method_name(arg1: Type1, arg2: Type2, ..., $argN: TypeN) -> ReturnType
     ```
+
 - When inheriting, structs must come before protocols in the inheritance list.
 
 ## Control Flow
@@ -71,6 +77,7 @@ Petram is a statically typed language with type inference. It is whitespace-sign
   - `if` is an expression and must be enclosed in `#{}#`.
   - If you don't want to return anything from the `if` expression, you can discard it with the special `_` pattern.
   - The return value of the `if` expression is the value of the last expression in the block. If the last thing evaluated is a statement, then the return value is `()`.
+
   - ```petra
       _ := #{
             if #{somecond}# ->
@@ -82,9 +89,11 @@ Petram is a statically typed language with type inference. It is whitespace-sign
           -- ... -}
       }#
     ```
+
 ## Pattern Matching
 
 - Pattern matching is an expression and must be enclosed in `#{}#`.
+
 - ```petra
     $somevar := #{
         match $something_else ->
@@ -97,13 +106,14 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 ## Loops
 
 - `foreach` loop:
+
   - ```petra
       -- inferred as List<Int>
       $collection := {|1, 2, 3|}
 
       -- $item is inferred as Int
       foreach $item in $collection ->
-        #{println :: message: "Item: {$item}"}#
+        #{println ~> message: "Item: {$item}"}#
 
       {- Prints:
       Item: 1
