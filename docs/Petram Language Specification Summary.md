@@ -27,7 +27,7 @@
 - Argument names must always be provided.
 - Methods similar to functions but use `method` keyword
 
-## Structs and Traits
+## Structs and Protocols
 
 - Structs: `struct #{Name}# ->`
   - Structs have a constructor with the special `new #{arg1: Type1, $arg2: Type2, ..., $argN: TypeN}#: Self` signature
@@ -44,8 +44,8 @@
     $square := #{Square::new :: side_length: 3.4}#
   ```
 
-- Traits: `trait #{Name}# ->`
-  - Traits are similar to Protocols in Objective C or interfaces in other OO programming languages.
+- Protocols: `protocol #{Name}# ->`
+  - Protocols are similar to Protocols in Objective C or interfaces in other OO programming languages.
 - Fields: `field name: Type`
 - Constrained fields
   - You may define a constrained filed via the following syntax: `constrained field struct_field_name: Type where #{condition}# message: "Error message"`
