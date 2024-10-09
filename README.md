@@ -2,7 +2,7 @@
 
 ## What is Petram?
 
-Petram is a general-purpose programming language with verbosity as a feature. It aims to be extremely strict, rigid, but still petraonomic and expressive enough to the point where writing code in it becomes effortless.
+Petram is a general-purpose programming language with verbosity as a feature. It aims to be extremely strict, rigid, but still ergonomic and expressive enough to the point where writing code in it becomes effortless.
 
 **<u>Petram IS STILL IN ITS INFANCY!</u>**
 
