@@ -24,9 +24,9 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 
 ## Functions
 
-- Function definition: `func #{name ~> param1: Type, param2: OtherType, ..., $paramN: TypeN}#: ReturnType ->`
+- Function definition: `func #{function_name ~> param1: Type, param2: OtherType, ..., $paramN: TypeN}#: ReturnType ->`
 - Single-expression functions: `=>`
-- Function call: `#{function_name(arg1: value1, arg2: value2)}#`
+- Function call: `#{function_name ~> arg1: value1, arg2: value2}#`
   - Named arguments must always be used in the function call.
 - Argument names must always be provided.
 
@@ -34,28 +34,28 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 
 - Struct definition:
 
-  - ```petra
-      struct #{StructName}# ->
+```petra
+    struct #{StructName}# ->
         field field_name: Type
 
         new #{arg_name: Type}#: Self ->
-          @field_name = arg_name
-    ```
+            @field_name = arg_name
+```
 
 - Constructor: `new #{arg1: Type1, $arg2: Type2, ..., $argN: TypeN}#: Self`
-- Instantiation: `#{StructName::new ~> arg1: value1, arg2: value2, ..., argN: valueN}#`
+- Instantiation: `$my_struct := #{StructName::new ~> arg1: value1, arg2: value2, ..., argN: valueN}#`
 - Constrained fields:
 
-  - ```petra
-      struct #{StructName}# ->
+```petra
+    struct #{StructName}# ->
         constrained field field_name: Type
-          where #{boolean_expression}# message: "Error message"
+        where #{boolean_expression}# message: "Error message"
 
         new #{arg_name: Type}#: Result<Self, String> ->
-          @field_name = arg_name
-    ```
+            @field_name = arg_name
+```
 
-  - If you introduce one or more constrained fields to your struct, then the return type of the `new #{}#` constructor must be `Result<Self, String>`.
+- If you introduce one or more constrained fields to your struct, then the return type of the `new #{}#` constructor must be `Result<Self, String>`.
   - You must pattern match on the result of the constructor to check for errors.
   - The error string will be the message you've defined in that particular constraint.
 - Inheritance: `struct #{Rectangle < Shape}# ->`
@@ -64,10 +64,10 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 
 - Protocol definition:
 
-  - ```petra
-      protocol #{ProtocolName}# ->
-        method_name(arg1: Type1, arg2: Type2, ..., $argN: TypeN) -> ReturnType
-    ```
+```petra
+    protocol #{ProtocolName}# ->
+        method #{method_name ~> arg1: Type1, arg2: Type2, ..., $argN: TypeN}# -> ReturnType
+```
 
 - When inheriting, structs must come before protocols in the inheritance list.
 
@@ -82,11 +82,11 @@ Petram is a statically typed language with type inference. It is whitespace-sign
       _ := #{
             if #{somecond}# ->
                 -- statements, expressions
-      {- optionally
-      else if #{othercond}# ->
-          -- ...
-      else ->
-          -- ... -}
+            {- optionally
+            else if #{othercond}# ->
+                -- ...
+            else ->
+                -- ... -}
       }#
     ```
 
@@ -94,30 +94,31 @@ Petram is a statically typed language with type inference. It is whitespace-sign
 
 - Pattern matching is an expression and must be enclosed in `#{}#`.
 
-- ```petra
-    $somevar := #{
-        match $something_else ->
-            Pattern1 -> result1
-            Pattern2 -> result2
-            _ -> default_result
-    }#
-    ```
+```petra
+$somevar := #{
+    match $something_else ->
+        Pattern1 -> result1
+        Pattern2 -> result2
+        _ -> default_result
+}#
+```
 
 ## Loops
 
 - `foreach` loop:
 
-  - ```petra
-      -- inferred as List<Int>
-      $collection := {|1, 2, 3|}
+```petra
+-- inferred as List<Int>
+$collection := {|1, 2, 3|}
 
-      -- $item is inferred as Int
-      foreach $item in $collection ->
-        #{println ~> message: "Item: {$item}"}#
+-- $item is inferred as Int
+foreach $item in $collection ->
+#{println ~> message: "Item: {$item}"}#
 
-      {- Prints:
-      Item: 1
-      Item: 2
-      Item: 3
-      -}
-    ```
+{-
+Prints:
+Item: 1
+Item: 2
+Item: 3
+-}
+```
