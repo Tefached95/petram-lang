@@ -33,29 +33,28 @@ struct #{DoesNotImplementPrintable}# ->
     new #{number: Int}#: Self ->
         @n = number
 
-func #{main :: args: List<String>}#: () ->
+func #{main ~> args: List<String>}#: () ->
     $rectangles := {|
-        #{Rectangle::new :: width: 3.0, height: 4.0}#,
-        #{Rectangle::new :: width: 2.5, height: 5.0}#,
-        #{Rectangle::new :: width: 1.0, height: 10.0}#
+        #{Rectangle::new ~> width: 3.0, height: 4.0}#,
+        #{Rectangle::new ~> width: 2.5, height: 5.0}#,
+        #{Rectangle::new ~> width: 1.0, height: 10.0}#
     |}
 
     -- This will not work
-    -- $whoops := #{PrintableHolder::new :: item: #{DoesNotImplementPrintable::new :: number: 3}#}#
+    -- $whoops := #{PrintableHolder::new ~> item: #{DoesNotImplementPrintable::new ~> number: 3}#}#
     -- ERROR: Cannot instantiate PrintableHolder<T> with `DoesNotImplementPrintable`.
     --        `DoesNotImplementPrintable` does not derive the trait `Printable`.
 
     -- Use |> with a mix of built-in and custom methods
     $large_areas := $rectangles
-        |> #{.map(f: func #{rect: Rectangle}#: Float => #{rect.area()}#)}#
-        |> #{.filter(f: func #{area: Float}#: Bool => area > 10.0)}#
-        |> #{.for_each(f: func #{area: Float}#: Void => #{print(message: "Large rectangle area: {area}")}#)}#
+        |> #{$_.map ~> f: func #{rect: Rectangle}#: Float => #{rect.area()}#}#
+        |> #{$_.filter ~> f: func #{area: Float}#: Bool => area > 10.0}#
+        |> #{$_.for_each ~> f: func #{area: Float}#: Void => #{print(message: "Large rectangle area: {area}")}#}#
 
     -- Chaining with the to_string method
     $rectangle_descriptions := $rectangles
-        |> #{.map(f: func #{rect: Rectangle}#: String => #{rect.to_string()}#)}#
-        |> #{.join(separator: ", ")}#
+        |> #{$_.map ~> f: func #{rect: Rectangle}#: String => #{rect.to_string()}#)}#
+        |> #{$_.join ~> separator: ", "}#
 
-    #{print(message: "Rectangles: {$rectangle_descriptions}")}#
-    -- Implicit unit return
+    #{println ~> message: "Rectangles: {$rectangle_descriptions}"}#
     () 

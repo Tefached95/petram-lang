@@ -44,17 +44,17 @@ struct #{Point3D}# ->
 #{import :: Geometry::TwoDimensional as TwoD}#
 #{import :: Geometry::ThreeDimensional::Point3D}#
 
-func #{main :: args: List<String>}#: () ->
-    $point := #{TwoD::Point::new :: x: 0.0, y: 0.0}#
-    $rect := #{TwoD::Rectangle::new :: 
-        top_left: #{TwoD::Point::new :: x: 0.0, y: 5.0}#,
-        bottom_right: #{TwoD::Point::new :: x: 10.0, y: 0.0}#
+func #{main ~> args: List<String>}#: () ->
+    $point := #{TwoD::Point::new ~> x: 0.0, y: 0.0}#
+    $rect := #{TwoD::Rectangle::new ~> 
+        top_left: #{TwoD::Point::new ~> x: 0.0, y: 5.0}#,
+        bottom_right: #{TwoD::Point::new ~> x: 10.0, y: 0.0}#
     }#
 
     $area := #{rect.area()}#
-    #{println :: message: "Rectangle area: {$area}"}#
+    #{println ~> message: "Rectangle area: {$area}"}#
 
-    $point3d := #{Point3D::new :: x: 1.0, y: 2.0, z: 3.0}#
-    #{println :: message: "3D Point: ({$point3d.x}, {$point3d.y}, {$point3d.z})"}#
+    $point3d := #{Point3D::new ~> x: 1.0, y: 2.0, z: 3.0}#
+    #{println ~> message: "3D Point: ({$point3d.x}, {$point3d.y}, {$point3d.z})"}#
 
     ()

@@ -15,9 +15,9 @@ func #{main :: args: List<String>}#: () ->
     $third_element := #{nested_numbers[2][2]}#  -- Should be 9
 
     -- Print the accessed elements
-    #{print(message: "First element: {$first_element}")}#
-    #{print(message: "Second element: {$second_element}")}#
-    #{print(message: "Third element: {$third_element}")}#
+    #{println ~> message: "First element: {$first_element}"}#
+    #{println ~> message: "Second element: {$second_element}"}#
+    #{println ~> message: "Third element: {$third_element}"}#
 
     -- Define a nested struct
     struct #{Outer}# ->
@@ -33,13 +33,13 @@ func #{main :: args: List<String>}#: () ->
                 @value = value
 
     -- Instantiate the nested struct
-    $outer := #{Outer::new :: inner: #{Outer::Inner::new :: value: 42}#}#
+    $outer := #{Outer::new ~> inner: #{Outer::Inner::new ~> value: 42}#}#
 
     -- Access the nested value
     $nested_value := #{outer.inner.value}#
 
     -- Print the nested value
-    #{print(message: "Nested value: {$nested_value}")}#
+    #{println ~> message: "Nested value: {$nested_value}"}#
 
     ()
 

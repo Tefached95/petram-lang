@@ -1,16 +1,15 @@
--- hello_world.erg
 {-
     This is a multiline comment.
     We can use this to use docblocks for describing function parameters and return types.
 -}
-func #{add_two_integers :: a: Int, b: Int}#: Int => a + b
+func #{add_two_integers ~> a: Int, b: Int}#: Int => a + b
 
 -- We also have lambda expressions
-func #{add_two_integers_lambda :: a: Int, b: Int}#: Int => a + b
+func #{add_two_integers_lambda ~> a: Int, b: Int}#: Int => a + b
 
-func #{divide_two_integers :: dividend: Int, divisor: Int}#: Result<Int, DivisonByZeroError> ->
+func #{divide_two_integers ~> dividend: Int, divisor: Int}#: Result<Int, DivisonByZeroError> ->
     if #{divisor == 0}# ->
-        #{println :: message: "Divisor must not be 0."}#
+        #{println ~> message: "Divisor must not be 0."}#
         return Result::Error(DivisonByZeroError)
     else ->
         return Result::Ok(dividend / divisor)
@@ -41,7 +40,7 @@ struct #{Square}# ->
 
     method #{calculate_area}#: Int => @side_length * @side_length
 
-    method #{set_side_length :: new_length: Int}#: Result<(), SizeError> ->
+    method #{set_side_length ~> new_length: Int}#: Result<(), SizeError> ->
         -- You can manually check constraints
         _ := #{if #{Self::constraints.side_length(new_length)}# ->
             @side_length = new_length
@@ -51,7 +50,7 @@ struct #{Square}# ->
         }#
 
 -- This is a single line comment.
-func #{main :: args: List<String>}#: Int ->
+func #{main ~> args: List<String>}#: Int ->
     -- Simple variable declaration with type inferrence
     $a := 3
 
@@ -59,31 +58,31 @@ func #{main :: args: List<String>}#: Int ->
     $b: Int = 4
     
     -- Assignment via function call, with implicit and explicit types
-    $res := #{add_two_integers :: a: $a, b: $b}#
-    $res2: Int = #{add_two_integers_lambda :: a: $a, b: $b}#
+    $res := #{add_two_integers ~> a: $a, b: $b}#
+    $res2: Int = #{add_two_integers_lambda ~> a: $a, b: $b}#
 
     -- Instantiate a struct, which can potentially fail
     -- `match` is an expression, so it returns a value, like in Rust.
     $square :=
         #{
-            match #{Square::new :: side_length: 5}# ->
+            match #{Square::new ~> side_length: 5}# ->
                 Option::Some($s) ->
-                    #{println :: message: "Square created successfully"}#
+                    #{println ~> message: "Square created successfully"}#
                     return Option::Some($s)
                 Option::None() ->
-                    #{println :: message: "Error: {$error}"}#
+                    #{println ~> message: "Error: {$error}"}#
                     return Option::None
         }#
 
     -- Discard return values with _
     _ := #{
-        match #{Square::new :: side_length: -1}# ->
+        match #{Square::new ~> side_length: -1}# ->
             Option::Some(_) ->
                 return 1 -- should never happen
             Option::None($error) ->
-                #{println :: message: "Error as expected: {$error}"}#
+                #{println ~> message: "Error as expected: {$error}"}#
     }#
 
     -- Print the result
-    #{println :: message "{$a} + {$b} = {$res}"}#
+    #{println ~> message "{$a} + {$b} = {$res}"}#
     return 0
