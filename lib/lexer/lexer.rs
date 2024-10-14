@@ -1,6 +1,24 @@
-use std::{iter::Peekable, str::Chars};
+use lazy_static::lazy_static;
+use std::{collections::HashMap, iter::Peekable, str::Chars};
 
-#[derive(Debug)]
+lazy_static! {
+    static ref KEYWORDS: HashMap<&'static str, TokenType> = HashMap::from([
+        ("func", TokenType::Func),
+        ("struct", TokenType::Struct),
+        ("method", TokenType::Method),
+        ("enum", TokenType::Enum),
+        ("if", TokenType::If),
+        ("else", TokenType::Else),
+        ("match", TokenType::Match),
+        ("field", TokenType::Field),
+        ("constrained", TokenType::Constrained),
+        ("new", TokenType::New),
+        ("return", TokenType::Return),
+        ("protocol", TokenType::Protocol),
+    ]);
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // Types
     Int8,
@@ -55,7 +73,7 @@ pub enum TokenType {
     // Assignment
     Assign,      // =
     InferAssign, // :=
-    TypeDecl,    // :
+    Colon,       // :
 
     // Punctuation
     OpenHashBrace,
@@ -77,9 +95,7 @@ pub enum TokenType {
 
     // Identifiers
     Variable(String),
-    FunctionName(String),
-    MethodName(String),
-    ProtocolName(String),
+    Identifier(String),
 
     // Literals
     // TODO(tefached95): Remove?
@@ -96,11 +112,23 @@ pub enum TokenType {
     EOL,
 }
 
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
 #[derive(Debug)]
 pub struct Token {
     token_type: TokenType,
     line: usize,
     column: usize,
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}({}:{})", self.token_type, self.line, self.column)
+    }
 }
 
 #[derive(Debug)]
@@ -119,12 +147,171 @@ impl<'a> Lexer<'a> {
             line: 1,
             column: 1,
             tokens: vec![],
-            indentation_stack: vec![0],
+            indentation_stack: vec![],
         };
         lexer
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
+        self.handle_indentation();
+
+        while let Some(c) = self.peek_next() {
+            match c {
+                ' ' | '\t' => {
+                    self.advance_by(1);
+                    continue;
+                }
+                '\n' | '\r' => {
+                    self.advance_by(1);
+                    self.line += 1;
+                    self.column = 1;
+                    return Some(Token {
+                        token_type: TokenType::EOL,
+                        line: self.line - 1,
+                        column: self.column,
+                    });
+                }
+                '~' => {
+                    self.advance_by(1);
+                    if let Some(ch) = self.peek_next() {
+                        if ch == '>' {
+                            self.advance_by(1);
+                            return Some(Token {
+                                token_type: TokenType::WavyArrow,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        }
+                    }
+                }
+                '-' => {
+                    self.advance_by(1);
+                    if let Some(ch) = self.peek_next() {
+                        if ch == '-' {
+                            self.advance_until(|c| c == '\n');
+
+                            return Some(Token {
+                                token_type: TokenType::LineComment,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        } else if ch == '>' {
+                            self.advance_by(1);
+
+                            return Some(Token {
+                                token_type: TokenType::ThinArrow,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        } else {
+                            return Some(Token {
+                                token_type: TokenType::Minus,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        }
+                    }
+                }
+                ':' => {
+                    self.advance_by(1);
+                    if let Some(ch) = self.peek_next() {
+                        if ch == ':' {
+                            self.advance_by(1);
+
+                            return Some(Token {
+                                token_type: TokenType::DoubleColon,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        } else if ch == '=' {
+                            self.advance_by(1);
+
+                            return Some(Token {
+                                token_type: TokenType::InferAssign,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        } else {
+                            return Some(Token {
+                                token_type: TokenType::Colon,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        }
+                    }
+                }
+                '$' => {
+                    self.advance_by(1);
+
+                    return Some(Token {
+                        token_type: TokenType::Colon,
+                        line: self.line,
+                        column: self.column,
+                    });
+                }
+                '0'..='9' => {
+                    let number = self.handle_number();
+                    return Some(Token {
+                        token_type: TokenType::IntLiteral(number),
+                        line: self.line,
+                        column: self.column,
+                    });
+                }
+                'a'..='z' | 'A'..='Z' | '_' => {
+                    let identifier = self.handle_identifier();
+                    if let Some(kw) = KEYWORDS.get(&identifier.as_str()) {
+                        return Some(Token {
+                            token_type: kw.clone(),
+                            line: self.line,
+                            column: self.column,
+                        });
+                    }
+                    return Some(Token {
+                        token_type: TokenType::Identifier(identifier),
+                        line: self.line,
+                        column: self.column,
+                    });
+                }
+                '#' => {
+                    self.advance_by(1);
+                    if let Some(ch) = self.peek_next() {
+                        if ch == '{' {
+                            self.advance_by(1);
+                            return Some(Token {
+                                token_type: TokenType::OpenHashBrace,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        }
+                    }
+                }
+                '}' => {
+                    self.advance_by(1);
+                    if let Some(ch) = self.peek_next() {
+                        if ch == '#' {
+                            self.advance_by(1);
+                            return Some(Token {
+                                token_type: TokenType::CloseHashBrace,
+                                line: self.line,
+                                column: self.column,
+                            });
+                        }
+                    }
+                }
+                '"' => {
+                    let string = self.handle_string();
+                    return Some(Token {
+                        token_type: TokenType::StringLiteral(string),
+                        line: self.line,
+                        column: self.column,
+                    });
+                }
+                _ => todo!("Handle character: {}", c),
+            }
+
+            self.advance_by(1);
+        }
+
         None
     }
 
@@ -133,42 +320,95 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn advance_by(&mut self, amount: usize) {
-        self.source.nth(amount);
+        for _ in 0..amount {
+            self.source.next();
+        }
         self.column += amount;
     }
 
-    pub fn advance_until(&mut self, predicate: impl Fn(String) -> bool) {
-        let mut amt: usize = 0;
-        while !predicate(
-            self.source
-                .next()
-                .expect("Could not get the next char")
-                .to_string(),
-        ) {
-            amt += 1;
+    /// Advances the lexer up to, but not including, the char that the predicate matches.
+    ///
+    /// Example:
+    /// ```
+    /// use petram::lexer::Lexer;
+    /// let source = String::from("hello world");
+    /// let mut lexer = Lexer::new(&source);
+    /// lexer.advance_until(|s| s == 'w');
+    /// assert_eq!(lexer.peek_next(), Some('w'));
+    /// ```
+    pub fn advance_until(&mut self, predicate: impl Fn(char) -> bool) {
+        while let Some(c) = self.peek_next() {
+            if predicate(c) {
+                break;
+            }
+            self.advance_by(1);
         }
-        self.advance_by(amt);
+    }
+
+    pub fn handle_string(&mut self) -> String {
+        self.advance_by(1);
+        let mut string = String::new();
+        while let Some(c) = self.peek_next() {
+            if c == '"' {
+                self.advance_by(1);
+                break;
+            }
+            string.push(c);
+            self.advance_by(1);
+        }
+        return string;
+    }
+
+    pub fn handle_number(&mut self) -> i64 {
+        let mut number = String::new();
+
+        while let Some(c) = self.peek_next() {
+            if c.is_digit(10) {
+                number.push(c);
+                self.advance_by(1);
+            } else {
+                break;
+            }
+        }
+
+        let value = number
+            .parse::<i64>()
+            .expect("Could not parse integer value");
+        value
+    }
+
+    pub fn handle_identifier(&mut self) -> String {
+        let mut identifier = String::new();
+
+        while let Some(c) = self.peek_next() {
+            if c.is_whitespace() {
+                break;
+            } else if c.is_alphanumeric() || c == '_' {
+                identifier.push(c);
+                self.advance_by(1);
+            } else {
+                break;
+            }
+        }
+
+        return identifier;
     }
 
     pub fn handle_indentation(&mut self) {
         let mut indent_level = 0;
-        
+
         while let Some(c) = self.peek_next() {
             match c {
-                ' ' => {
+                ' ' | '\t' => {
                     self.advance_by(1);
                     indent_level += 1;
-                }
-                '\t' => {
-                    self.advance_by(4);
-                    indent_level += 4;
                 }
                 _ => break,
             }
         }
 
-        let mut current_indent = self.indentation_stack.last().unwrap();
-        
+        let mut current_indent = self.indentation_stack.last().unwrap_or_else(|| &0);
+
         if indent_level > *current_indent {
             self.indentation_stack.push(indent_level);
             self.tokens.push(Token {
@@ -184,11 +424,10 @@ impl<'a> Lexer<'a> {
                     line: self.line,
                     column: self.column,
                 });
-                current_indent = self.indentation_stack.last().unwrap();
+                current_indent = self.indentation_stack.last().unwrap_or_else(|| &0);
             }
-        } else {
-            eprintln!("Error: Invalid indentation level on line {}", self.line);
-            std::process::exit(1);
         }
+
+        self.column += indent_level;
     }
 }
