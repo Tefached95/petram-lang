@@ -19,8 +19,15 @@ fn main() -> Result<(), std::io::Error> {
     println!("Program path: {}", program_path.display());
 
     if let Ok(source) = std::fs::read_to_string(program_path) {
-        let lexer = lexer::Lexer::new(&source);
-        println!("{:#?}", lexer);
+        let mut lexer = lexer::Lexer::new(&source);
+        let mut tokens: Vec<lexer::Token> = vec![];
+
+        while let Some(token) = lexer.next_token() {
+            println!("{}", token);
+            tokens.push(token);
+        }
+
+        // tokens.iter().for_each(|token| println!("{}", token));
         return Ok(());
     } else {
         return Err(std::io::Error::new(
