@@ -150,6 +150,8 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
+        // @TODO(tefached95): Line and column numbering is kinda backwards - the _ends_ of the tokens are marked instead of where they actually appear.
+        // This should be relatively simple to fix, just mark the current line and colum and use that when emitting tokens instead.
         if self.column == 1 {
             let indents = self.handle_indentation();
 
