@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use std::{collections::HashMap, iter::Peekable, str::Chars};
+use strum_macros::{Display, EnumString};
 
 lazy_static! {
     static ref KEYWORDS: HashMap<&'static str, TokenType> = HashMap::from([
@@ -18,7 +19,7 @@ lazy_static! {
     ]);
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Display, EnumString)]
 pub enum TokenType {
     // Types
     Int8,
@@ -94,14 +95,19 @@ pub enum TokenType {
     Dedent,
 
     // Identifiers
+    #[strum(serialize = "Variable({0})")]
     Variable(String),
+    #[strum(serialize = "Identifier({0})")]
     Identifier(String),
 
     // Literals
     // TODO(tefached95): Remove?
+    #[strum(serialize = "IntLiteral({0})")]
     IntLiteral(i64),
+    #[strum(serialize = "UintLiteral({0})")]
     UintLiteral(u64),
     FloatLiteral(f64),
+    #[strum(serialize = "StringLiteral(\"{0}\")")]
     StringLiteral(String),
     CharLiteral(char),
 
@@ -110,12 +116,6 @@ pub enum TokenType {
     BlockComment, // {- This is a comment -}
     EOF,
     EOL,
-}
-
-impl std::fmt::Display for TokenType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
-    }
 }
 
 #[derive(Debug)]
@@ -142,19 +142,16 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn new(source: &'a String) -> Self {
-        let lexer = Self {
+        Self {
             source: source.chars().peekable(),
             line: 1,
             column: 1,
             tokens: vec![],
             indentation_stack: vec![],
-        };
-        lexer
+        }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
-        self.handle_indentation();
-
         while let Some(c) = self.peek_next() {
             match c {
                 ' ' | '\t' => {
@@ -163,13 +160,14 @@ impl<'a> Lexer<'a> {
                 }
                 '\n' | '\r' => {
                     self.advance_by(1);
-                    self.line += 1;
-                    self.column = 1;
-                    return Some(Token {
+                    let ret = Some(Token {
                         token_type: TokenType::EOL,
                         line: self.line - 1,
                         column: self.column,
                     });
+                    self.line += 1;
+                    self.column = 1;
+                    return ret;
                 }
                 '~' => {
                     self.advance_by(1);
@@ -188,8 +186,7 @@ impl<'a> Lexer<'a> {
                     self.advance_by(1);
                     if let Some(ch) = self.peek_next() {
                         if ch == '-' {
-                            self.advance_until(|c| c == '\n');
-
+                            self.advance_up_to(|c| c == '\n');
                             return Some(Token {
                                 token_type: TokenType::LineComment,
                                 line: self.line,
@@ -336,7 +333,7 @@ impl<'a> Lexer<'a> {
     /// lexer.advance_until(|s| s == 'w');
     /// assert_eq!(lexer.peek_next(), Some('w'));
     /// ```
-    pub fn advance_until(&mut self, predicate: impl Fn(char) -> bool) {
+    pub fn advance_up_to(&mut self, predicate: impl Fn(char) -> bool) {
         while let Some(c) = self.peek_next() {
             if predicate(c) {
                 break;
@@ -407,24 +404,29 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        let mut current_indent = self.indentation_stack.last().unwrap_or_else(|| &0);
+        let current_indent = *self.indentation_stack.last().unwrap_or(&0);
 
-        if indent_level > *current_indent {
+        if indent_level > current_indent {
             self.indentation_stack.push(indent_level);
             self.tokens.push(Token {
                 token_type: TokenType::Indent,
                 line: self.line,
                 column: self.column,
             });
-        } else if indent_level < *current_indent {
-            while indent_level < *current_indent {
+        } else if indent_level < current_indent {
+            while !self.indentation_stack.is_empty()
+                && indent_level < *self.indentation_stack.last().unwrap()
+            {
                 self.indentation_stack.pop();
                 self.tokens.push(Token {
                     token_type: TokenType::Dedent,
                     line: self.line,
                     column: self.column,
                 });
-                current_indent = self.indentation_stack.last().unwrap_or_else(|| &0);
+            }
+            if indent_level != *self.indentation_stack.last().unwrap_or(&0) {
+                // Indentation error: mismatched indent level
+                panic!("Indentation error at line {}", self.line);
             }
         }
 

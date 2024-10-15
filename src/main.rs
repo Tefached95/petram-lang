@@ -23,11 +23,10 @@ fn main() -> Result<(), std::io::Error> {
         let mut tokens: Vec<lexer::Token> = vec![];
 
         while let Some(token) = lexer.next_token() {
-            println!("{}", token);
             tokens.push(token);
         }
 
-        // tokens.iter().for_each(|token| println!("{}", token));
+        tokens.iter().for_each(|token| println!("{}", token));
         return Ok(());
     } else {
         return Err(std::io::Error::new(
