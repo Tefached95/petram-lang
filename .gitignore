@@ -18,6 +18,9 @@ Cargo.lock
 *.swo
 *~
 
+# Codeium?
+/docs_vector_embedding/
+
 # Operating System generated files
 .DS_Store
 .DS_Store?
