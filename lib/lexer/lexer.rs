@@ -118,7 +118,7 @@ pub enum TokenType {
     EOL,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     token_type: TokenType,
     line: usize,
@@ -136,7 +136,6 @@ pub struct Lexer<'a> {
     source: Peekable<Chars<'a>>,
     line: usize,
     column: usize,
-    tokens: Vec<Token>,
     indentation_stack: Vec<usize>,
 }
 
@@ -146,12 +145,19 @@ impl<'a> Lexer<'a> {
             source: source.chars().peekable(),
             line: 1,
             column: 1,
-            tokens: vec![],
             indentation_stack: vec![],
         }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
+        if self.column == 1 {
+            let indents = self.handle_indentation();
+
+            if !indents.is_empty() {
+                let first = indents[0].clone();
+                return Some(first);
+            }
+        }
         while let Some(c) = self.peek_next() {
             match c {
                 ' ' | '\t' => {
@@ -162,7 +168,7 @@ impl<'a> Lexer<'a> {
                     self.advance_by(1);
                     let ret = Some(Token {
                         token_type: TokenType::EOL,
-                        line: self.line - 1,
+                        line: self.line,
                         column: self.column,
                     });
                     self.line += 1;
@@ -391,8 +397,9 @@ impl<'a> Lexer<'a> {
         return identifier;
     }
 
-    pub fn handle_indentation(&mut self) {
+    pub fn handle_indentation(&mut self) -> Vec<Token> {
         let mut indent_level = 0;
+        let mut indentation_tokens: Vec<Token> = vec![];
 
         while let Some(c) = self.peek_next() {
             match c {
@@ -408,7 +415,7 @@ impl<'a> Lexer<'a> {
 
         if indent_level > current_indent {
             self.indentation_stack.push(indent_level);
-            self.tokens.push(Token {
+            indentation_tokens.push(Token {
                 token_type: TokenType::Indent,
                 line: self.line,
                 column: self.column,
@@ -418,7 +425,7 @@ impl<'a> Lexer<'a> {
                 && indent_level < *self.indentation_stack.last().unwrap()
             {
                 self.indentation_stack.pop();
-                self.tokens.push(Token {
+                indentation_tokens.push(Token {
                     token_type: TokenType::Dedent,
                     line: self.line,
                     column: self.column,
@@ -431,5 +438,6 @@ impl<'a> Lexer<'a> {
         }
 
         self.column += indent_level;
+        return indentation_tokens;
     }
 }
