@@ -160,6 +160,9 @@ impl<'a> Lexer<'a> {
                 return Some(first);
             }
         }
+        let start_line = self.line;
+        let start_column = self.column;
+
         while let Some(c) = self.peek_next() {
             match c {
                 ' ' | '\t' => {
@@ -170,8 +173,8 @@ impl<'a> Lexer<'a> {
                     self.advance_by(1);
                     let ret = Some(Token {
                         token_type: TokenType::EOL,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     });
                     self.line += 1;
                     self.column = 1;
@@ -184,8 +187,8 @@ impl<'a> Lexer<'a> {
                             self.advance_by(1);
                             return Some(Token {
                                 token_type: TokenType::WavyArrow,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         }
                     }
@@ -197,22 +200,22 @@ impl<'a> Lexer<'a> {
                             self.advance_up_to(|c| c == '\n');
                             return Some(Token {
                                 token_type: TokenType::LineComment,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         } else if ch == '>' {
                             self.advance_by(1);
 
                             return Some(Token {
                                 token_type: TokenType::ThinArrow,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         } else {
                             return Some(Token {
                                 token_type: TokenType::Minus,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         }
                     }
@@ -225,22 +228,22 @@ impl<'a> Lexer<'a> {
 
                             return Some(Token {
                                 token_type: TokenType::DoubleColon,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         } else if ch == '=' {
                             self.advance_by(1);
 
                             return Some(Token {
                                 token_type: TokenType::InferAssign,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         } else {
                             return Some(Token {
                                 token_type: TokenType::Colon,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         }
                     }
@@ -250,16 +253,16 @@ impl<'a> Lexer<'a> {
 
                     return Some(Token {
                         token_type: TokenType::Colon,
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     });
                 }
                 '0'..='9' => {
                     let number = self.handle_number();
                     return Some(Token {
                         token_type: TokenType::IntLiteral(number),
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     });
                 }
                 'a'..='z' | 'A'..='Z' | '_' => {
@@ -267,14 +270,14 @@ impl<'a> Lexer<'a> {
                     if let Some(kw) = KEYWORDS.get(&identifier.as_str()) {
                         return Some(Token {
                             token_type: kw.clone(),
-                            line: self.line,
-                            column: self.column,
+                            line: start_line,
+                            column: start_column,
                         });
                     }
                     return Some(Token {
                         token_type: TokenType::Identifier(identifier),
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     });
                 }
                 '#' => {
@@ -284,8 +287,8 @@ impl<'a> Lexer<'a> {
                             self.advance_by(1);
                             return Some(Token {
                                 token_type: TokenType::OpenHashBrace,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         }
                     }
@@ -297,8 +300,8 @@ impl<'a> Lexer<'a> {
                             self.advance_by(1);
                             return Some(Token {
                                 token_type: TokenType::CloseHashBrace,
-                                line: self.line,
-                                column: self.column,
+                                line: start_line,
+                                column: start_column,
                             });
                         }
                     }
@@ -307,8 +310,8 @@ impl<'a> Lexer<'a> {
                     let string = self.handle_string();
                     return Some(Token {
                         token_type: TokenType::StringLiteral(string),
-                        line: self.line,
-                        column: self.column,
+                        line: start_line,
+                        column: start_column,
                     });
                 }
                 _ => todo!("Handle character: {}", c),
