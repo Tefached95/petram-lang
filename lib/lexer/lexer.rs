@@ -81,18 +81,15 @@ pub enum TokenType {
     CloseHashBrace,
     OpenList,
     CloseList,
-    OpenGenericBracket,
-    CloseGenericBracker,
     ThinArrow,
     FatArrow,
     WavyArrow,
     Comma,
-    Whitespace,
     DoubleColon,
 
-    // Indentation
-    Indent,
-    Dedent,
+    // Indentation with level
+    #[strum(serialize = "Indent({0})")]
+    Indent(usize),
 
     // Identifiers
     #[strum(serialize = "Variable({0})")]
@@ -106,23 +103,24 @@ pub enum TokenType {
     IntLiteral(i64),
     #[strum(serialize = "UintLiteral({0})")]
     UintLiteral(u64),
+    #[strum(serialize = "FloatLiteral({0})")]
     FloatLiteral(f64),
     #[strum(serialize = "StringLiteral(\"{0}\")")]
     StringLiteral(String),
+    #[strum(serialize = "CharLiteral({0})")]
     CharLiteral(char),
 
     // Misc
     LineComment,  // -- This is a comment
     BlockComment, // {- This is a comment -}
-    EOF,
     EOL,
 }
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
-    line: usize,
-    column: usize,
+    pub token_type: TokenType,
+    pub line: usize,
+    pub column: usize,
 }
 
 impl std::fmt::Display for Token {
@@ -136,7 +134,6 @@ pub struct Lexer<'a> {
     source: Peekable<Chars<'a>>,
     line: usize,
     column: usize,
-    indentation_stack: Vec<usize>,
 }
 
 impl<'a> Lexer<'a> {
@@ -145,30 +142,21 @@ impl<'a> Lexer<'a> {
             source: source.chars().peekable(),
             line: 1,
             column: 1,
-            indentation_stack: vec![],
         }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
-        // @TODO(tefached95): Line and column numbering is kinda backwards - the _ends_ of the tokens are marked instead of where they actually appear.
-        // This should be relatively simple to fix, just mark the current line and colum and use that when emitting tokens instead.
         if self.column == 1 {
-            let indents = self.handle_indentation();
-
-            if !indents.is_empty() {
-                let first = indents[0].clone();
-                return Some(first);
+            if let Some(indent) = self.handle_indentation() {
+                return Some(indent);
             }
         }
+
         let start_line = self.line;
-        let start_column = self.column;
+        let start_column = self.column + self.skip_whitespace();
 
         while let Some(c) = self.peek_next() {
             match c {
-                ' ' | '\t' => {
-                    self.advance_by(1);
-                    continue;
-                }
                 '\n' | '\r' => {
                     self.advance_by(1);
                     let ret = Some(Token {
@@ -317,7 +305,7 @@ impl<'a> Lexer<'a> {
                 _ => todo!("Handle character: {}", c),
             }
 
-            self.advance_by(1);
+            // self.advance_by(1);
         }
 
         None
@@ -334,6 +322,25 @@ impl<'a> Lexer<'a> {
         self.column += amount;
     }
 
+    pub fn skip_whitespace(&mut self) -> usize {
+        let mut whitespace_count = 0;
+        // Skip whitespace and update column
+        while let Some(c) = self.peek_next() {
+            match c {
+                ' ' => {
+                    self.advance_by(1);
+                    whitespace_count += 1;
+                }
+                '\t' => {
+                    self.advance_by(1);
+                    whitespace_count += 4;
+                }
+                _ => break,
+            }
+        }
+        whitespace_count
+    }
+
     /// Advances the lexer up to, but not including, the char that the predicate matches.
     ///
     /// Example:
@@ -344,7 +351,10 @@ impl<'a> Lexer<'a> {
     /// lexer.advance_until(|s| s == 'w');
     /// assert_eq!(lexer.peek_next(), Some('w'));
     /// ```
-    pub fn advance_up_to(&mut self, predicate: impl Fn(char) -> bool) {
+    pub fn advance_up_to<F>(&mut self, predicate: F)
+    where
+        F: Fn(char) -> bool,
+    {
         while let Some(c) = self.peek_next() {
             if predicate(c) {
                 break;
@@ -368,21 +378,17 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn handle_number(&mut self) -> i64 {
-        let mut number = String::new();
+        let number: String = self
+            .source
+            .by_ref()
+            .take_while(|c| c.is_digit(10))
+            .collect();
 
-        while let Some(c) = self.peek_next() {
-            if c.is_digit(10) {
-                number.push(c);
-                self.advance_by(1);
-            } else {
-                break;
-            }
-        }
+        self.column += number.len();
 
-        let value = number
+        number
             .parse::<i64>()
-            .expect("Could not parse integer value");
-        value
+            .expect("Could not parse integer value")
     }
 
     pub fn handle_identifier(&mut self) -> String {
@@ -402,47 +408,33 @@ impl<'a> Lexer<'a> {
         return identifier;
     }
 
-    pub fn handle_indentation(&mut self) -> Vec<Token> {
-        let mut indent_level = 0;
-        let mut indentation_tokens: Vec<Token> = vec![];
+    pub fn handle_indentation(&mut self) -> Option<Token> {
+        let mut indentation_level = 0;
 
         while let Some(c) = self.peek_next() {
             match c {
-                ' ' | '\t' => {
-                    self.advance_by(1);
-                    indent_level += 1;
-                }
+                ' ' => indentation_level += 1,
+                '\t' => indentation_level += 4,
                 _ => break,
             }
+            self.advance_by(1);
         }
 
-        let current_indent = *self.indentation_stack.last().unwrap_or(&0);
-
-        if indent_level > current_indent {
-            self.indentation_stack.push(indent_level);
-            indentation_tokens.push(Token {
-                token_type: TokenType::Indent,
-                line: self.line,
-                column: self.column,
-            });
-        } else if indent_level < current_indent {
-            while !self.indentation_stack.is_empty()
-                && indent_level < *self.indentation_stack.last().unwrap()
-            {
-                self.indentation_stack.pop();
-                indentation_tokens.push(Token {
-                    token_type: TokenType::Dedent,
-                    line: self.line,
-                    column: self.column,
-                });
-            }
-            if indent_level != *self.indentation_stack.last().unwrap_or(&0) {
-                // Indentation error: mismatched indent level
-                panic!("Indentation error at line {}", self.line);
-            }
+        if indentation_level == 0 {
+            return None;
         }
 
-        self.column += indent_level;
-        return indentation_tokens;
+        // TODO(tefached95): determine a way to detect tab width and use that instead of hardcoding 4
+        let indentation_width = (indentation_level + 3) / 4; // Round up division by 4
+
+        let t = Some(Token {
+            token_type: TokenType::Indent(indentation_width),
+            line: self.line,
+            column: 1, // indentation is always on column 1
+        });
+
+        self.column += indentation_level - 1; // hack?
+
+        t
     }
 }
