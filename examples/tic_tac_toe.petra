@@ -1,10 +1,16 @@
 func #{main ~> args: List<String>}#: () ->
-    $board := #{List::new(3) ~> item: #{List::new(3) ~> item: " "}}#
+    $board := #{
+        List<List<String>>::new(3) ~> item: #{
+            List<String>::new(3) ~> item: " "
+        }#
+    }#
     $current_player := "X"
     $winner := Option::None
     $moves := 0
 
-    while #{is_none ~> opt: $winner}# and $moves < 9 ->
+    while #{
+        #{Option::is_none ~> opt: $winner}# && $moves < 9
+    }# ->
         #{print_board ~> board: $board}#
         $row := #{get_move ~> prompt: "Row (0, 1, or 2): "}#
         $col := #{get_move ~> prompt: "Column (0, 1, or 2): "}#
@@ -39,7 +45,7 @@ func #{get_move ~> prompt: String}#: Result<Int, String> ->
     #{to_int ~> value: $input_val}#
 
 -- Helper function to check if a move is valid
-func #{valid_move? ~> board: List<List<String>>, row: Int, col: Int}#: Bool ->
+func #{valid_move? ~> board: List<List<String>>, row: Int, col: Int}#: Bool =>
     #{0 <= $row && $row < 3 && 0 <= $col && $col < 3 && $board[$row][$col] == " "}#
 
 -- Helper function to switch between players
@@ -54,7 +60,7 @@ func #{switch_player ~> current_player: String}#: String ->
 -- Helper function to check for a winner
 func #{check_winner ~> board: List<List<String>>, player: String}#: Option<String> ->
     -- Check rows, columns, and diagonals
-    foreach $i in #{List::range ~> start: 0, end: 3}# ->
+    foreach $i in 0..3 ->
         $winner := #{
             if #{$board[$i][0] == $player && $board[$i][1] == $player && $board[$i][2] == $player ||
                 $board[0][$i] == $player && $board[1][$i] == $player && $board[2][$i] == $player}# ->
@@ -63,7 +69,7 @@ func #{check_winner ~> board: List<List<String>>, player: String}#: Option<Strin
                 Option::None
         }#
         #{
-            if #{is_none ~> opt: $winner}# == false ->
+            if #{Option::is_none ~> opt: $winner}# == false ->
                 return $winner
         }#
 
