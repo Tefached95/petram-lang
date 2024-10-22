@@ -62,21 +62,27 @@ func #{check_winner ~> board: List<List<String>>, player: String}#: Option<Strin
     -- Check rows, columns, and diagonals
     foreach $i in 0..3 ->
         $winner := #{
-            if #{$board[$i][0] == $player && $board[$i][1] == $player && $board[$i][2] == $player ||
-                $board[0][$i] == $player && $board[1][$i] == $player && $board[2][$i] == $player}# ->
-                Option::Some($player)
+            if #{
+                board[$i][0] == player && board[$i][1] == player && board[$i][2] == player ||
+                board[0][$i] == player && board[1][$i] == player && board[2][$i] == player
+            }# ->
+                Option::Some(player)
             else ->
                 Option::None
         }#
-        #{
-            if #{Option::is_none ~> opt: $winner}# == false ->
-                return $winner
+
+        _ := #{
+            match $winner ->
+                None -> None,
+                Some($w) -> return $w
         }#
 
-    #{
-        if #{$board[0][0] == $player && $board[1][1] == $player && $board[2][2] == $player ||
-            $board[0][2] == $player && $board[1][1] == $player && $board[2][0] == $player}# ->
-            Option::Some($player)
+    return #{
+        if #{
+            board[0][0] == player && board[1][1] == player && board[2][2] == player ||
+            board[0][2] == player && board[1][1] == player && board[2][0] == player
+        }# ->
+            Option::Some(player)
         else ->
             Option::None
     }#

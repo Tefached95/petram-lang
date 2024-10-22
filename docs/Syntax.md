@@ -56,7 +56,7 @@ func #{greet_user ~> name: String}#: () ->
 ```petra
     struct #{StructName}# ->
         constrained field field_name: Type
-        where #{boolean_expression}# message: "Error message"
+            where #{boolean_expression}# message: "Error message"
 
         new #{arg_name: Type}#: Result<Self, String> ->
             @field_name = arg_name
@@ -101,31 +101,46 @@ func #{greet_user ~> name: String}#: () ->
 
 - Pattern matching is an expression and must be enclosed in `#{}#`.
 
-```petra
-$somevar := #{
-    match $something_else ->
-        Pattern1 -> result1
-        Pattern2 -> result2
-        _ -> default_result
-}#
-```
+  - ```petra
+    $somevar := #{
+        match $something_else ->
+            Pattern1 -> result1
+            Pattern2 -> result2
+            _ -> default_result
+        }#
+    ```
+
+
+- Using `match` as a statement is generally discouraged. However, if you wish to, you may use the `_ :=` syntax:
+
+  - ```petra
+    _ := #{
+        match $some_value ->
+            Pattern1 ->
+            #{println ~> message: "Pattern 1"}#
+        Pattern2 ->
+            #{println ~> message: "Pattern 2"}#
+        _ ->
+            #{println ~> message: "Default"}#
+    }#
+    ```
 
 ## Loops
 
 - `foreach` loop:
 
-```petra
--- inferred as List<Int>
-$collection := {|1, 2, 3|}
+  - ```petra
+    -- inferred as List<Int>
+    $collection := {|1, 2, 3|}
 
--- $item is inferred as Int
-foreach $item in $collection ->
-#{println ~> message: "Item: {$item}"}#
+    -- $item is inferred as Int
+    foreach $item in $collection ->
+        #{println ~> message: "Item: {$item}"}#
 
-{-
-Prints:
-Item: 1
-Item: 2
-Item: 3
--}
-```
+    {-
+        Prints:
+        Item: 1
+        Item: 2
+        Item: 3
+    -}
+    ```
