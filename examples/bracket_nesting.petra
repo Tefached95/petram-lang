@@ -10,9 +10,9 @@ func #{main :: args: List<String>}#: () ->
     |}
 
     -- Accessing elements in nested lists
-    $first_element := #{nested_numbers[0][0]}#  -- Should be 1
-    $second_element := #{nested_numbers[1][1]}#  -- Should be 5
-    $third_element := #{nested_numbers[2][2]}#  -- Should be 9
+    $first_element := #{nested_numbers[0, 0]}#  -- Should be 1
+    $second_element := #{nested_numbers[1, 1]}#  -- Should be 5
+    $third_element := #{nested_numbers[2, 2]}#  -- Should be 9
 
     -- Print the accessed elements
     #{println ~> message: "First element: {$first_element}"}#
