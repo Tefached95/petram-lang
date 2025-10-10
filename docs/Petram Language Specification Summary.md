@@ -407,63 +407,113 @@ end
 
 ### Struct Definition
 
+Structs contain only data definitions. Methods and functions are defined separately.
+
 ```petra
 struct StructName
-    field field1: Type1
-    field field2: Type2
-    
-    func new(field1: Type1, field2: Type2): Self
-        @field1 = field1
-        @field2 = field2
-        return Self
-    end
-    
-    method method_name(param: Type): ReturnType
-        -- method body
-        return value
-    end
+    field1: Type1
+    field2: Type2
 end
 ```
 
 Example:
 ```petra
 struct Rectangle
-    field width: Float
-    field height: Float
+    width: Float
+    height: Float
+end
+```
+
+### Invariants
+
+Structs can have invariants that constrain their fields. Each invariant clause is checked separately for precise error messages.
+
+```petra
+struct Square
+    side_length: u32
     
-    func new(width: Float, height: Float): Self
-        @width = width
-        @height = height
-        return Self
-    end
-    
-    method area(): Float
-        return @width * @height
-    end
-    
-    method scale(factor: Float): Self
-        return Rectangle::new(
-            width: @width * factor,
-            height: @height * factor
-        )
+    invariant
+        side_length > 0
+        side_length <= Square::MAX_SIDE_LENGTH
     end
 end
 ```
 
-### Struct Instantiation
+When a struct has invariants:
+- Any constructor automatically returns `Result<Self, String>` instead of `Self`
+- Any method that mutates fields automatically returns `Result<(), String>` instead of `()`
+- The compiler inserts runtime checks for all invariants
+- Each invariant is checked individually with specific error messages
 
 ```petra
-var rect = Rectangle::new(width: 10.0, height: 5.0)
-var area = rect.area()
+var sq = Square::new(side_length: -1)
+// Error: Invariant violated: side_length > 0 (got -1)
+
+var sq2 = Square::new(side_length: 2000)
+// Error: Invariant violated: side_length <= Square::MAX_SIDE_LENGTH (got 2000)
 ```
 
-### Field Access
+### Associated Functions
 
-Use `@` to access instance fields within methods:
+Associated functions are defined at module level using the `Type::function_name` syntax. These are typically used for constructors and other type-related utilities.
 
 ```petra
-method get_width(): Float
-    return @width
+func Square::new(side_length: u32): Result<Square, String>
+    return Result::Ok(Square{ side_length: side_length })
+    // Compiler automatically inserts invariant checks
+end
+
+func Square::from_area(area: u32): Result<Square, String>
+    var side = sqrt(area)
+    return Square::new(side_length: side)
+end
+```
+
+### Instance Methods
+
+Instance methods use receiver syntax similar to Go. The receiver parameter comes before the function name.
+
+**Immutable receiver** (pass by value):
+```petra
+func (r: Rectangle) area(): Float
+    return r.width * r.height
+end
+```
+
+**Mutable receiver** (pass by pointer):
+```petra
+func (r: *Rectangle) scale(factor: Float)
+    r.width = r.width * factor
+    r.height = r.height * factor
+end
+```
+
+The `*` in the receiver position indicates the method can mutate the struct. This is purely about mutability - Petram uses garbage collection, so no manual memory management is required.
+
+### Struct Instantiation and Method Calls
+
+```petra
+// Associated function call (constructor)
+var rect = Rectangle::new(width: 10.0, height: 5.0)
+
+// Instance method calls
+var area = rect.area()           // immutable method
+rect.scale(factor: 2.0)          // mutable method
+```
+
+### Associated Constants
+
+Constants can be namespaced to types:
+
+```petra
+const Square::MAX_SIDE_LENGTH: u32 = 1000
+
+struct Square
+    side_length: u32
+    
+    invariant
+        side_length <= Square::MAX_SIDE_LENGTH
+    end
 end
 ```
 
@@ -475,16 +525,15 @@ end
 
 ```petra
 struct Box<T>
-    field value: T
-    
-    func new(value: T): Self
-        @value = value
-        return Self
-    end
-    
-    method get(): T
-        return @value
-    end
+    value: T
+end
+
+func Box::new<T>(value: T): Box<T>
+    return Box{ value: value }
+end
+
+func (b: Box<T>) get(): T
+    return b.value
 end
 
 var int_box = Box<Int>::new(value: 42)
@@ -510,19 +559,19 @@ var y = identity<String>(value: "hello")
 
 ```petra
 trait TraitName
-    method method1(param: Type): ReturnType
-    method method2(): ReturnType
+    func (self: Self) method1(param: Type): ReturnType
+    func (self: Self) method2(): ReturnType
 end
 ```
 
 Example:
 ```petra
 trait Printable
-    method to_string(): String
+    func (self: Self) to_string(): String
 end
 
 trait Add<T>
-    method add(other: T): Self
+    func (self: Self) add(other: T): Self
 end
 ```
 
@@ -530,12 +579,12 @@ end
 
 ```petra
 struct Rectangle: Printable
-    field width: Float
-    field height: Float
-    
-    method to_string(): String
-        return "Rectangle({@width} x {@height})"
-    end
+    width: Float
+    height: Float
+end
+
+func (r: Rectangle) to_string(): String
+    return "Rectangle({r.width} x {r.height})"
 end
 ```
 
@@ -543,21 +592,21 @@ end
 
 ```petra
 struct Vector3: Printable, Add<Vector3>
-    field x: Float
-    field y: Float
-    field z: Float
-    
-    method to_string(): String
-        return "Vector3({@x}, {@y}, {@z})"
-    end
-    
-    method add(other: Vector3): Vector3
-        return Vector3::new(
-            x: @x + other.x,
-            y: @y + other.y,
-            z: @z + other.z
-        )
-    end
+    x: Float
+    y: Float
+    z: Float
+end
+
+func (v: Vector3) to_string(): String
+    return "Vector3({v.x}, {v.y}, {v.z})"
+end
+
+func (v: Vector3) add(other: Vector3): Vector3
+    return Vector3{
+        x: v.x + other.x,
+        y: v.y + other.y,
+        z: v.z + other.z
+    }
 end
 ```
 
@@ -567,23 +616,23 @@ Built-in traits for operator overloading:
 
 ```petra
 trait Add<T>
-    method add(other: T): Self
+    func (self: Self) add(other: T): Self
 end
 
 trait Sub<T>
-    method sub(other: T): Self
+    func (self: Self) sub(other: T): Self
 end
 
 trait Mul<T>
-    method mul(other: T): Self
+    func (self: Self) mul(other: T): Self
 end
 
 trait Div<T>
-    method div(other: T): Self
+    func (self: Self) div(other: T): Self
 end
 
 trait Eq
-    method equals(other: Self): Bool
+    func (self: Self) equals(other: Self): Bool
 end
 ```
 
@@ -882,22 +931,20 @@ end
 
 ```petra
 struct Person
-    field name: String
-    field age: Int
-    
-    func new(name: String, age: Int): Self
-        @name = name
-        @age = age
-        return Self
-    end
-    
-    method greet(): String
-        return "Hello, my name is {@name} and I'm {@age} years old."
-    end
-    
-    method is_adult(): Bool
-        return @age >= 18
-    end
+    name: String
+    age: Int
+end
+
+func Person::new(name: String, age: Int): Person
+    return Person{ name: name, age: age }
+end
+
+func (p: Person) greet(): String
+    return "Hello, my name is {p.name} and I'm {p.age} years old."
+end
+
+func (p: Person) is_adult(): Bool
+    return p.age >= 18
 end
 
 func main(args: List<String>): Int
@@ -946,35 +993,32 @@ end
 
 ```petra
 trait Shape
-    method area(): Float
+    func (self: Self) area(): Float
 end
 
 struct Circle: Shape
-    field radius: Float
-    
-    func new(radius: Float): Self
-        @radius = radius
-        return Self
-    end
-    
-    method area(): Float
-        return 3.14159 * @radius * @radius
-    end
+    radius: Float
+end
+
+func Circle::new(radius: Float): Circle
+    return Circle{ radius: radius }
+end
+
+func (c: Circle) area(): Float
+    return 3.14159 * c.radius * c.radius
 end
 
 struct Rectangle: Shape
-    field width: Float
-    field height: Float
-    
-    func new(width: Float, height: Float): Self
-        @width = width
-        @height = height
-        return Self
-    end
-    
-    method area(): Float
-        return @width * @height
-    end
+    width: Float
+    height: Float
+end
+
+func Rectangle::new(width: Float, height: Float): Rectangle
+    return Rectangle{ width: width, height: height }
+end
+
+func (r: Rectangle) area(): Float
+    return r.width * r.height
 end
 
 func print_area<T: Shape>(shape: T)
@@ -1018,7 +1062,17 @@ module_decl = "module" identifier
 
 import_decl = "import" path ("::" "{" identifier_list "}")?
 
-top_level_item = func_decl | struct_decl | trait_decl
+top_level_item = func_decl | associated_func_decl | method_decl | struct_decl | trait_decl | const_decl
+
+associated_func_decl = "func" identifier "::" identifier "(" param_list? ")" ":" type
+                       statement*
+                       "end"
+
+method_decl = "func" "(" receiver ")" identifier "(" param_list? ")" (":" type)?
+              statement*
+              "end"
+
+receiver = identifier ":" "*"? type
 
 func_decl = "func" identifier "(" param_list? ")" ":" type
             statement*
@@ -1028,17 +1082,21 @@ struct_decl = "struct" identifier ("<" type_params ">")? (":" trait_list)?
               struct_member*
               "end"
 
-struct_member = field_decl | func_decl | method_decl
+struct_member = field_decl | invariant_block
 
-field_decl = "field" identifier ":" type
+field_decl = identifier ":" type
 
-method_decl = "method" identifier "(" param_list? ")" ":" type
-              statement*
-              "end"
+invariant_block = "invariant"
+                  (expression)*
+                  "end"
+
+const_decl = "const" (identifier "::")? identifier ":" type "=" expr
 
 trait_decl = "trait" identifier
              method_signature*
              "end"
+
+method_signature = "func" "(" "self" ":" "Self" ")" identifier "(" param_list? ")" ":" type
 
 statement = var_decl | const_decl | assignment | return_stmt | 
             if_stmt | match_expr | while_loop | for_loop |
