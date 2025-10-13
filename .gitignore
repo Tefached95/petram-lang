@@ -41,4 +41,5 @@ Thumbs.db
 # Ignore compiled objects
 /obj/
 /bin/
+/target/
 .fake
