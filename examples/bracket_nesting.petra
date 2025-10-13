@@ -1,51 +1,49 @@
 -- File: bracket_nesting_demo.petra
 
-func #{main :: args: List<String>}#: () ->
+func main(args: List<String>): Int
     -- Define a nested list of numbers
     -- Type inferred as List<List<Int>>
-    $nested_numbers := {|
-        {|1, 2, 3|},
-        {|4, 5, 6|},
-        {|7, 8, 9|}
-    |}
+    var nested_numbers = {
+        {1, 2, 3},
+        {4, 5, 6},
+        {7, 8, 9}
+    }
 
     -- Accessing elements in nested lists
-    $first_element := #{nested_numbers[0, 0]}#  -- Should be 1
-    $second_element := #{nested_numbers[1, 1]}#  -- Should be 5
-    $third_element := #{nested_numbers[2, 2]}#  -- Should be 9
+    var first_element = nested_numbers[0][0]  -- Should be 1
+    var second_element = nested_numbers[1][1]  -- Should be 5
+    var third_element = nested_numbers[2][2]  -- Should be 9
 
     -- Print the accessed elements
-    #{println ~> message: "First element: {$first_element}"}#
-    #{println ~> message: "Second element: {$second_element}"}#
-    #{println ~> message: "Third element: {$third_element}"}#
+    println(message: "First element: {first_element}")
+    println(message: "Second element: {second_element}")
+    println(message: "Third element: {third_element}")
 
     -- Define a nested struct
-    struct #{Outer}# ->
-        field inner: Inner
-
-        new #{inner: Inner}#: Self ->
-            @inner = inner
-
-        struct #{Inner}# ->
-            field value: Int
-
-            new #{value: Int}#: Self ->
-                @value = value
+    struct Outer
+        inner: Inner
+        
+        struct Inner
+            value: Int
+        end
+    end
 
     -- Instantiate the nested struct
-    $outer := #{Outer::new ~> inner: #{Outer::Inner::new ~> value: 42}#}#
+    var outer = Outer::new(inner: Outer::Inner::new(value: 42))
 
     -- Access the nested value
-    $nested_value := #{outer.inner.value}#
+    var nested_value = outer.inner.value
 
     -- Print the nested value
-    #{println ~> message: "Nested value: {$nested_value}"}#
+    println(message: "Nested value: {nested_value}")
 
-    ()
+    return 0
+end
 
+func Outer::new(inner: Outer::Inner): Outer
+    return Outer{ inner: inner }
+end
 
-
-
-
-
-    
+func Outer::Inner::new(value: Int): Outer::Inner
+    return Outer::Inner{ value: value }
+end

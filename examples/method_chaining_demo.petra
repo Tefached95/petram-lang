@@ -1,0 +1,61 @@
+-- Petram Example: Method Chaining
+-- File: method_chaining_demo.petra
+
+-- Example struct that will demonstrate method chaining with more complex data
+struct Person
+    name: String
+    age: Int
+end
+
+func Person::new(name: String, age: Int): Person
+    return Person{ name: name, age: age }
+end
+
+func (p: Person) greet(): String
+    return "Hello, my name is {p.name}!"
+end
+
+func main(args: List<String>): Int
+    -- Define a list of numbers
+    var numbers = {1, 2, 3, 4, 5}  -- Type inferred as List<Int>
+
+    {-
+        Use standard method chaining
+        Each method returns a value that the next method is called on
+    -} 
+    var result = numbers
+        .map(|item: Int| item * 2 end)
+        .filter(|item: Int| item > 5 end)
+        .reduce(|acc: Int, item: Int| acc + item end, initial: 0)
+
+    -- Print the result
+    println(message: "Result: {result}")
+
+    var people: List<Person> = {
+        Person::new(name: "Alice", age: 30),
+        Person::new(name: "Bob", age: 25),
+        Person::new(name: "Charlie", age: 35)
+    }
+
+    -- Use method chaining
+    -- The type of total_age is inferred as Int
+    var total_age = people
+        .map(|person: Person| person.age end)
+        .reduce(|acc: Int, age: Int| acc + age end, initial: 0)
+
+    -- And average_age is inferred as Float
+    var average_age = Float(total_age) / Float(people.length())
+
+    -- Prints "Average age: 30.0"
+    println(message: "Average age: {average_age}")
+
+    -- Demonstrate more complex chaining
+    var processed_people = people
+        .filter(|person: Person| person.age > 25 end)
+        .map(|person: Person| person.greet() end)
+        .join(separator: " ")
+
+    println(message: "Greetings from older people: {processed_people}")
+    
+    return 0
+end

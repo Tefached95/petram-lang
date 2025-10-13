@@ -1,60 +1,64 @@
 -- File: geometry/two_dimensional.petra
 
-#{module :: Geometry::TwoDimensional}#
+module Geometry::TwoDimensional
 
-struct #{Point}# ->
-    field x: Float
-    field y: Float
+struct Point
+    x: Float
+    y: Float
+end
 
-    new #{x: Float, y: Float}#: Self ->
-        @x = x
-        @y = y
+func Point::new(x: Float, y: Float): Point
+    return Point{ x: x, y: y }
+end
 
-struct #{Rectangle}# ->
-    field top_left: Point
-    field bottom_right: Point
+struct Rectangle
+    top_left: Point
+    bottom_right: Point
+end
 
-    new #{top_left: Point, bottom_right: Point}#: Self ->
-        @top_left = top_left
-        @bottom_right = bottom_right
+func Rectangle::new(top_left: Point, bottom_right: Point): Rectangle
+    return Rectangle{ top_left: top_left, bottom_right: bottom_right }
+end
 
-    method #{area}#: Float ->
-        $width := @bottom_right.x - @top_left.x
-        $height := @top_left.y - @bottom_right.y
-        return width * height
+func (r: Rectangle) area(): Float
+    var width = r.bottom_right.x - r.top_left.x
+    var height = r.top_left.y - r.bottom_right.y
+    return width * height
+end
 
 -- File: geometry/three_dimensional.petra
 
-#{module :: Geometry::ThreeDimensional}#
+module Geometry::ThreeDimensional
 
-struct #{Point3D}# ->
-    field x: Float
-    field y: Float
-    field z: Float
+struct Point3D
+    x: Float
+    y: Float
+    z: Float
+end
 
-    new #{x: Float, y: Float, z: Float}#: Self ->
-        @x = x
-        @y = y
-        @z = z
+func Point3D::new(x: Float, y: Float, z: Float): Point3D
+    return Point3D{ x: x, y: y, z: z }
+end
 
 -- File: main.petra
 
-#{module :: Main}#
+module Main
 
-#{import :: Geometry::TwoDimensional as TwoD}#
-#{import :: Geometry::ThreeDimensional::Point3D}#
+import Geometry::TwoDimensional::{Point, Rectangle}
+import Geometry::ThreeDimensional::{Point3D}
 
-func #{main ~> args: List<String>}#: () ->
-    $point := #{TwoD::Point::new ~> x: 0.0, y: 0.0}#
-    $rect := #{TwoD::Rectangle::new ~> 
-        top_left: #{TwoD::Point::new ~> x: 0.0, y: 5.0}#,
-        bottom_right: #{TwoD::Point::new ~> x: 10.0, y: 0.0}#
-    }#
+func main(args: List<String>): Int
+    var point = Point::new(x: 0.0, y: 0.0)
+    var rect = Rectangle::new(
+        top_left: Point::new(x: 0.0, y: 5.0),
+        bottom_right: Point::new(x: 10.0, y: 0.0)
+    )
 
-    $area := #{rect.area()}#
-    #{println ~> message: "Rectangle area: {$area}"}#
+    var area = rect.area()
+    println(message: "Rectangle area: {area}")
 
-    $point3d := #{Point3D::new ~> x: 1.0, y: 2.0, z: 3.0}#
-    #{println ~> message: "3D Point: ({$point3d.x}, {$point3d.y}, {$point3d.z})"}#
+    var point3d = Point3D::new(x: 1.0, y: 2.0, z: 3.0)
+    println(message: "3D Point: ({point3d.x}, {point3d.y}, {point3d.z})")
 
-    ()
+    return 0
+end

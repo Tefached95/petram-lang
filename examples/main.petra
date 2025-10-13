@@ -2,87 +2,89 @@
     This is a multiline comment.
     We can use this to use docblocks for describing function parameters and return types.
 -}
-func #{add_two_integers ~> a: Int, b: Int}#: Int => a + b
 
--- We also have lambda expressions
-func #{add_two_integers_lambda ~> a: Int, b: Int}#: Int => a + b
+func add_two_integers(a: Int, b: Int): Int
+    return a + b
+end
 
-func #{divide_two_integers ~> dividend: Int, divisor: Int}#: Result<Int, DivisonByZeroError> ->
-    if #{divisor == 0}# ->
-        #{println ~> message: "Divisor must not be 0."}#
-        return Result::Error(DivisonByZeroError)
-    else ->
-        return Result::Ok(dividend / divisor)
+-- Lambda version
+var add_two_integers_lambda = |a: Int, b: Int| a + b end
+
+func divide_two_integers(dividend: Int, divisor: Int): Result<Int, String>
+    if divisor == 0
+        println(message: "Divisor must not be 0.")
+        return Result::Error("Division by zero")
+    end
+    return Result::Ok(dividend / divisor)
+end
 
 {-
-    Here's a moderately complex struct with a constraint.
-    A constraint is a mechanism that will not allow you to instantiate a struct if the check fails.
-    Constraints is a metadata structure that is accessible from within the struct. You can access it with
-    Self::constraints.<field name>. This is a function that returns a Bool.
-    NOTE: If you add one or more constraints to a struct, the return type of the constructor changes from Self to Result<Self, String>, and you must use pattern matching for Ok(value) or Error(error_message)
+    Here's a moderately complex struct with invariants.
+    An invariant is a mechanism that will not allow you to instantiate a struct if the check fails.
+    NOTE: If you add one or more invariants to a struct, the return type of the constructor 
+    changes from Self to Result<Self, String>, and you must use pattern matching for Ok(value) 
+    or Error(error_message)
 -}
-struct #{Square}# ->
-    -- This is a simple field declaration
-    field funny_name: String
+struct Square
+    funny_name: String
+    side_length: Int
+    
+    invariant
+        side_length > 0
+    end
+end
 
-    -- This is a constrained field
-    constrained field side_length: Int
-        where #{side_length > 0}#
-        with message: "Side of a square must be greater than 0."
+func Square::new(funny_name: String, side_length: Int): Result<Square, String>
+    return Result::Ok(Square{
+        funny_name: funny_name,
+        side_length: side_length
+    })
+    -- Compiler automatically inserts invariant checks
+end
 
-    new #{funny_name: String, side_length: Int}#: Result<Self, String> ->
-        @funny_name = funny_name
+func (s: Square) calculate_area(): Int
+    return s.side_length * s.side_length
+end
 
-        -- Constraints are automatically checked here.
-        -- If a constraint fails, Result::Error() is returned with the message defined in the constraint.
-        -- Otherwise it is Result::Ok(Self), in this instance Result::Ok(Square)
-        @side_length = side_length
-
-    method #{calculate_area}#: Int => @side_length * @side_length
-
-    method #{set_side_length ~> new_length: Int}#: Result<(), SizeError> ->
-        -- You can manually check constraints
-        _ := #{if #{Self::constraints.side_length(new_length)}# ->
-            @side_length = new_length
-            return Result::Ok(())
-        else ->
-            return Result::Error(SizeError)
-        }#
+func (s: *Square) set_side_length(new_length: Int): Result<(), String>
+    -- Invariants are checked automatically when mutating
+    s.side_length = new_length
+    return Result::Ok(())
+end
 
 -- This is a single line comment.
-func #{main ~> args: List<String>}#: Int ->
-    -- Simple variable declaration with type inferrence
-    $a := 3
+func main(args: List<String>): Int
+    -- Simple variable declaration with type inference
+    var a = 3
 
     -- Optional explicit type declaration
-    $b: Int = 4
+    var b: Int = 4
     
     -- Assignment via function call, with implicit and explicit types
-    $res := #{add_two_integers ~> a: $a, b: $b}#
-    $res2: Int = #{add_two_integers_lambda ~> a: $a, b: $b}#
+    var res = add_two_integers(a: a, b: b)
+    var res2: Int = add_two_integers_lambda(a, b)
 
     -- Instantiate a struct, which can potentially fail
     -- `match` is an expression, so it returns a value, like in Rust.
-    $square :=
-        #{
-            match #{Square::new ~> side_length: 5}# ->
-                Option::Some($s) ->
-                    #{println ~> message: "Square created successfully"}#
-                    return Option::Some($s)
-                Option::None() ->
-                    #{println ~> message: "Error: {$error}"}#
-                    return Option::None
-        }#
+    var square = match Square::new(funny_name: "My Square", side_length: 5)
+        case Result::Ok(s) ->
+            println(message: "Square created successfully")
+            Result::Ok(s)
+        case Result::Error(error) ->
+            println(message: "Error: {error}")
+            Result::Error(error)
+    end
 
     -- Discard return values with _
-    _ := #{
-        match #{Square::new ~> side_length: -1}# ->
-            Option::Some(_) ->
-                return 1 -- should never happen
-            Option::None($error) ->
-                #{println ~> message: "Error as expected: {$error}"}#
-    }#
+    var _ = match Square::new(funny_name: "Bad Square", side_length: -1)
+        case Result::Ok(_) ->
+            1  -- should never happen
+        case Result::Error(error) ->
+            println(message: "Error as expected: {error}")
+            0
+    end
 
     -- Print the result
-    #{println ~> message "{$a} + {$b} = {$res}"}#
+    println(message: "{a} + {b} = {res}")
     return 0
+end

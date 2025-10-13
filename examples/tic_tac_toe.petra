@@ -1,88 +1,87 @@
-func #{main ~> args: List<String>}#: () ->
-    $board := [3, 3; " "]
-    $current_player := "X"
-    $winner := Option::None
-    $moves := 0
-
-    while #{
-        $winner.is_none? && $moves < 9
-    }# ->
-        #{print_board ~> board: $board}#
-        $row := #{get_move ~> prompt: "Row (0, 1, or 2): "}#
-        $col := #{get_move ~> prompt: "Column (0, 1, or 2): "}#
-        
-        _ := #{
-            if #{valid_move? ~> board: $board, row: $row, col: $col}# ->
-                $board[$row, $col] := $current_player
-                $moves := $moves + 1
-                $winner := #{check_winner ~> board: $board, player: $current_player}#
-                $current_player := #{switch_player ~> current_player: $current_player}#
-            else ->
-                #{println ~> message: "Invalid move. Try again."}#
-        }#
+func main(args: List<String>): Int
+    var board = [[String; 3]; 3]
+    -- Initialize board with spaces
+    for i = 0; i < 3; i = i + 1
+        for j = 0; j < 3; j = j + 1
+            board[i][j] = " "
+        end
+    end
     
-    #{print_board ~> board: $board}#
-    $message := #{
-        match $winner ->
-            Option::Some($winner) -> "Player {$winner} wins!"
-            Option::None -> "It's a tie!"
-    }#
-    #{println ~> message: $message}#
+    var current_player = "X"
+    var winner = Option::None
+    var moves = 0
+
+    while winner.is_none() && moves < 9
+        print_board(board: board)
+        var row = get_move(prompt: "Row (0, 1, or 2): ")
+        var col = get_move(prompt: "Column (0, 1, or 2): ")
+        
+        if valid_move(board: board, row: row, col: col)
+            board[row][col] = current_player
+            moves = moves + 1
+            winner = check_winner(board: board, player: current_player)
+            current_player = switch_player(current_player: current_player)
+        else
+            println(message: "Invalid move. Try again.")
+        end
+    end
+    
+    print_board(board: board)
+    var message = match winner
+        case Option::Some(winner) -> "Player {winner} wins!"
+        case Option::None -> "It's a tie!"
+    end
+    println(message: message)
+    
+    return 0
+end
 
 -- Helper function to print the board
-func #{print_board ~> board: [][]String}#: () ->
-    foreach $row in $board ->
-        #{println ~> message: " | ".join($row)}#
-        #{println ~> message: "---------"}#
+func print_board(board: [[String; 3]; 3]): ()
+    for i = 0; i < 3; i = i + 1
+        var row = board[i]
+        println(message: "{row[0]} | {row[1]} | {row[2]}")
+        println(message: "---------")
+    end
+end
 
 -- Helper function to get a valid move from the user
-func #{get_move ~> prompt: String}#: Result<Int, String> ->
-    $input_val := #{input ~> prompt: $prompt}#
-    #{to_int ~> value: $input_val}#
+func get_move(prompt: String): Result<Int, String>
+    var input_val = input(prompt: prompt)
+    return to_int(value: input_val)
+end
 
 {-
     Helper function to check if a move is valid
-    Shows off the `?` sugar by making this a predicate function, implicitly returning a Bool
 -}
-func #{valid_move? ~> board: [][]String, row: Int, col: Int}# =>
-    #{0 <= $row && $row < 3 && 0 <= $col && $col < 3 && $board[$row, $col] == " "}#
+func valid_move(board: [[String; 3]; 3], row: Int, col: Int): Bool
+    return 0 <= row && row < 3 && 0 <= col && col < 3 && board[row][col] == " "
+end
 
 -- Helper function to switch between players
-func #{switch_player ~> current_player: String}#: String ->
-    #{
-        match $current_player ->
-            "X" -> "O"
-            "O" -> "X"
-            _ -> panic("Invalid player")
-    }#
+func switch_player(current_player: String): String
+    return match current_player
+        case "X" -> "O"
+        case "O" -> "X"
+        case _ -> panic("Invalid player")
+    end
+end
 
 -- Helper function to check for a winner
-func #{check_winner ~> board: [][]String, player: String}#: Option<String> ->
-    -- Check rows, columns first
-    foreach $i in 0..3 ->
-        $winner := #{
-            if #{
-                board[$i, 0] == player && board[$i, 1] == player && board[$i, 2] == player ||
-                board[0, $i] == player && board[1, $i] == player && board[2, $i] == player
-            }# ->
-                Option::Some(player)
-            else ->
-                Option::None
-        }#
-
-        _ := #{
-            match $winner ->
-                None -> None,
-                Some($w) -> return $w
-        }#
+func check_winner(board: [[String; 3]; 3], player: String): Option<String>
+    -- Check rows and columns
+    for i = 0; i < 3; i = i + 1
+        if (board[i][0] == player && board[i][1] == player && board[i][2] == player) ||
+           (board[0][i] == player && board[1][i] == player && board[2][i] == player)
+            return Option::Some(player)
+        end
+    end
 
     -- Check diagonals
-    return #{
-        if #{
-            board[0, 0] == player && board[1, 1] == player && board[2, 2] == player ||
-            board[0, 2] == player && board[1, 1] == player && board[2, 0] == player
-        }# ->
-            Option::Some(player)
-        else ->
-            Option::None
-    }#
+    if (board[0][0] == player && board[1][1] == player && board[2][2] == player) ||
+       (board[0][2] == player && board[1][1] == player && board[2][0] == player)
+        return Option::Some(player)
+    end
+    
+    return Option::None
+end

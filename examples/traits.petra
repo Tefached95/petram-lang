@@ -2,59 +2,73 @@
 
 -- A trait is pretty similar to Rust's traits. It's a definition of methods that a deriving struct must implement.
 -- It also allows for constraints on generics.
-trait #{Printable}# ->
-    method #{to_string}#: String
+trait Printable
+    func (self: Self) to_string(): String
+end
 
-struct #{Rectangle < Printable}# ->
-    field width: Float
-    field height: Float
+struct Rectangle: Printable
+    width: Float
+    height: Float
+end
 
-    new #{width: Float, height: Float}#: Self ->
-        @width = width
-        @height = height
+func Rectangle::new(width: Float, height: Float): Rectangle
+    return Rectangle{ width: width, height: height }
+end
 
-    method #{area}#: Float => @width * @height
+func (r: Rectangle) area(): Float
+    return r.width * r.height
+end
 
-    method #{to_string}#: String => "Rectangle({@width} x {@height})"
+func (r: Rectangle) to_string(): String
+    return "Rectangle({r.width} x {r.height})"
+end
 
 -- Here we demonstrate how to constrain a generic parameter where it must implement a trait
-struct #{PrintableHolder<T>}# where T < Printable ->
-    field item: T
+struct PrintableHolder<T>: Printable
+    item: T
+end
 
-    new #{item: T}#: Self ->
-        @item = item
+func PrintableHolder::new<T: Printable>(item: T): PrintableHolder<T>
+    return PrintableHolder{ item: item }
+end
 
-    -- In this method, since we know that T derives from Printable, we can call .to_string() on it.
-    method #{print_containing_item}#: String => #{item.to_string()}#
+-- In this method, since we know that T derives from Printable, we can call .to_string() on it.
+func (h: PrintableHolder<T>) print_containing_item(): String
+    return h.item.to_string()
+end
 
-struct #{DoesNotImplementPrintable}# ->
-    field n: Int
+struct DoesNotImplementPrintable
+    n: Int
+end
 
-    new #{number: Int}#: Self ->
-        @n = number
+func DoesNotImplementPrintable::new(number: Int): DoesNotImplementPrintable
+    return DoesNotImplementPrintable{ n: number }
+end
 
-func #{main ~> args: List<String>}#: () ->
-    $rectangles := {|
-        #{Rectangle::new ~> width: 3.0, height: 4.0}#,
-        #{Rectangle::new ~> width: 2.5, height: 5.0}#,
-        #{Rectangle::new ~> width: 1.0, height: 10.0}#
-    |}
+func main(args: List<String>): Int
+    var rectangles = {
+        Rectangle::new(width: 3.0, height: 4.0),
+        Rectangle::new(width: 2.5, height: 5.0),
+        Rectangle::new(width: 1.0, height: 10.0)
+    }
 
-    -- This will not work
-    -- $whoops := #{PrintableHolder::new ~> item: #{DoesNotImplementPrintable::new ~> number: 3}#}#
+    -- This will not work:
+    -- var whoops = PrintableHolder::new(item: DoesNotImplementPrintable::new(number: 3))
     -- ERROR: Cannot instantiate PrintableHolder<T> with `DoesNotImplementPrintable`.
     --        `DoesNotImplementPrintable` does not derive the trait `Printable`.
 
-    -- Use |> with a mix of built-in and custom methods
-    $large_areas := $rectangles
-        |> #{$_.map ~> f: func #{rect: Rectangle}#: Float => #{rect.area()}#}#
-        |> #{$_.filter ~> f: func #{area: Float}#: Bool => area > 10.0}#
-        |> #{$_.for_each ~> f: func #{area: Float}#: Void => #{print(message: "Large rectangle area: {area}")}#}#
+    -- Use method chaining with a mix of built-in and custom methods
+    var large_areas = rectangles
+        .map(|rect: Rectangle| rect.area() end)
+        .filter(|area: Float| area > 10.0 end)
+        .for_each(|area: Float| println(message: "Large rectangle area: {area}") end)
 
     -- Chaining with the to_string method
-    $rectangle_descriptions := $rectangles
-        |> #{$_.map ~> f: func #{rect: Rectangle}#: String => #{rect.to_string()}#)}#
-        |> #{$_.join ~> separator: ", "}#
+    var rectangle_descriptions = rectangles
+        .map(|rect: Rectangle| rect.to_string() end)
+        .join(separator: ", ")
 
-    #{println ~> message: "Rectangles: {$rectangle_descriptions}"}#
-    () 
+    println(message: "Rectangles: {rectangle_descriptions}")
+    
+    return 0
+end
