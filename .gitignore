@@ -1,45 +1,39 @@
-# Editor directories and files
-.vscode/
+# Build results
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+
+# .NET artifacts
+*.dll
+*.exe
+*.pdb
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / Rider
+.vs/
 .idea/
 *.swp
 *.swo
-*~
 
-# Codeium?
-/docs_vector_embedding/
+# VS Code
+.vscode/
+.ionide/
 
-# Operating System generated files
+# OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# NuGet
+*.nupkg
+packages/
+paket-files/
 
-# Log files
-*.log
-
-# If you're using a database, you might want to ignore database files
-*.sqlite
-
-# Ignore any compiled documentation
-/doc/
-
-# If you're using Diesel ORM, ignore diesel migration files
-/migrations/.keep
-/migrations/*/up.sql
-/migrations/*/down.sql
-
-# Ignore compiled objects
-/obj/
-/bin/
-/target/
-.fake
+# Test results
+TestResults/
+*.trx
