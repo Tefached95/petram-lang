@@ -2,6 +2,6 @@ open Lexer
 
 [<EntryPoint>]
 let main args =
-    let lines = lexFile args[0]
-    printfn $"Got lines {lines}"
+    let tokenList = lexFile args[0]
+    tokenList |> List.iter (fun token -> printfn "%s" (token.ToString()))
     0
