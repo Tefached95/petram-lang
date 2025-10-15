@@ -35,39 +35,42 @@ let rec takeWhile (predicate: char -> bool) (chars: char list) : (char list * ch
         else
             [], head :: tail
 
-let rec lex (chars: char list) : Token list =
-    match chars with
-    | [] -> []
-    | c :: rest when System.Char.IsWhiteSpace c -> lex rest
-    | '-' :: '-' :: tail -> // Single line comment
-        let comment, rest = takeWhile (fun c -> c <> '\n') tail
+let lex (chars: char list) : Token list =
+    let rec loop chars acc =
+        match chars with
+        | [] -> acc |> List.rev
+        | c :: rest when System.Char.IsWhiteSpace c -> loop rest acc
+        | '-' :: '-' :: tail ->
+            let comment, rest = takeWhile (fun c -> c <> '\n') tail
 
-        SingleLineComment(charArrayToString comment) :: lex rest
-    | ':' :: tail -> Colon :: lex tail
-    | '(' :: tail -> LeftParenthesis :: lex tail
-    | ')' :: tail -> RightParenthesis :: lex tail
-    | '<' :: tail -> LeftAngleBracket :: lex tail
-    | '>' :: tail -> RightAngleBracket :: lex tail
-    | '"' :: tail ->
-        let consumed, rest = takeWhile (fun c -> c <> '"') tail
+            loop rest (SingleLineComment(charArrayToString comment) :: acc)
+        | ':' :: tail -> loop tail (Colon :: acc)
+        | '(' :: tail -> loop tail (LeftParenthesis :: acc)
+        | ')' :: tail -> loop tail (RightParenthesis :: acc)
+        | '<' :: tail -> loop tail (LeftAngleBracket :: acc)
+        | '>' :: tail -> loop tail (RightAngleBracket :: acc)
+        | '"' :: tail ->
+            let consumed, rest = takeWhile (fun c -> c <> '"') tail
 
-        match rest with
-        | '"' :: remaining -> StringLiteral(charArrayToString consumed) :: lex remaining
-        | _ -> failwith "Unterminated string literal."
-    | head :: tail when System.Char.IsLetter head ->
-        let consumed, rest = takeWhile isIdentifierChar tail
+            match rest with
+            | '"' :: remaining -> loop remaining (StringLiteral(charArrayToString consumed) :: acc)
+            | _ -> failwith "Unterminated string literal."
+        | head :: tail when System.Char.IsLetter head ->
+            let consumed, rest = takeWhile isIdentifierChar tail
 
-        match charArrayToString (head :: consumed) with
-        | "func" -> Func :: lex rest
-        | "return" -> Return :: lex rest
-        | "end" -> End :: lex rest
-        | ident -> Identifier ident :: lex rest
-    | head :: tail when System.Char.IsDigit head ->
-        let consumed, rest = takeWhile System.Char.IsDigit tail
-        let numberStr = charArrayToString (head :: consumed)
-        let number = System.Int32.Parse numberStr
-        IntLiteral number :: lex rest
-    | _ :: tail -> Unknown :: lex tail
+            match charArrayToString (head :: consumed) with
+            | "func" -> loop rest (Func :: acc)
+            | "return" -> loop rest (Return :: acc)
+            | "end" -> loop rest (End :: acc)
+            | ident -> loop rest (Identifier ident :: acc)
+        | head :: tail when System.Char.IsDigit head ->
+            let consumed, rest = takeWhile System.Char.IsDigit tail
+            let numberStr = charArrayToString (head :: consumed)
+            let number = System.Int32.Parse numberStr
+            loop rest (IntLiteral number :: acc)
+        | _ :: tail -> loop tail (Unknown :: acc)
+
+    loop chars []
 
 let lexFile (path: string) : Token list =
     let programInput = File.ReadAllText path
