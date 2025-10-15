@@ -37,3 +37,4 @@ paket-files/
 # Test results
 TestResults/
 *.trx
+.fake
