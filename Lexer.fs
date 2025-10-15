@@ -36,7 +36,7 @@ let rec takeWhile (predicate: char -> bool) (chars: char list) : (char list * ch
             [], head :: tail
 
 let lex (chars: char list) : Token list =
-    let rec loop chars acc =
+    let rec loop (chars: char list) (acc: Token list) =
         match chars with
         | [] -> acc |> List.rev
         | c :: rest when System.Char.IsWhiteSpace c -> loop rest acc
