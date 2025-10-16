@@ -6,8 +6,9 @@
     <RootNamespace>petram_lang</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup><Compile Include="Types.fs" />
     <Compile Include="Lexer.fs" />
+    <Compile Include="Parser.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
