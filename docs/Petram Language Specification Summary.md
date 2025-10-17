@@ -245,6 +245,9 @@ func divide(dividend: Int, divisor: Int): Int
 end
 
 var result = divide(dividend: 10, divisor: 2)
+
+-- This also works.
+var result_swapped_args = divide(divisor: 2, dividend: 10)
 ```
 
 ### Multiple Return Values (Tuples)
