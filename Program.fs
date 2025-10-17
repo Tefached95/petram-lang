@@ -1,9 +1,16 @@
-module Petram.Program
+open System.IO
 
 [<EntryPoint>]
 let main args =
-    let tokenList = Lexer.lexFile args[0]
+    if args.Length = 0 then
+        printfn "Usage: petram <file.petra>"
+        1
+    else
+        let filePath = args[0]
+        let tokenList = Lexer.lexFile filePath
+        let nameOnly = Path.GetFileNameWithoutExtension filePath
 
-    Parser.parse tokenList |> fun decl -> printfn $"%s{decl.ToString()}"
+        let generatedCode = Parser.parse tokenList |> Codegen.emit
+        File.WriteAllText($"{nameOnly}.c", generatedCode)
 
-    0
+        0
