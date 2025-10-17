@@ -1,6 +1,7 @@
 module Lexer
 
 open System.IO
+open Tokens
 
 let charArrayToString (chars: char list) : string =
     (chars |> List.toArray |> System.String).Trim()
@@ -8,24 +9,7 @@ let charArrayToString (chars: char list) : string =
 let isIdentifierChar c =
     System.Char.IsLetterOrDigit c || c = '_'
 
-type Token =
-    | SingleLineComment of string
-    | MultiLineComment of string
-    | Func
-    | Symbol of string
-    | Colon
-    | LeftParenthesis
-    | RightParenthesis
-    | Identifier of string
-    | IntLiteral of int
-    | LeftAngleBracket
-    | RightAngleBracket
-    | StringLiteral of string
-    | Return
-    | End
-    | Unknown
-
-let rec takeWhile (predicate: char -> bool) (chars: char list) : (char list * char list) =
+let rec takeWhile (predicate: char -> bool) (chars: char list) : char list * char list =
     match chars with
     | [] -> [], []
     | head :: tail ->
@@ -49,6 +33,7 @@ let lex (chars: char list) : Token list =
         | ')' :: tail -> loop tail (RightParenthesis :: acc)
         | '<' :: tail -> loop tail (LeftAngleBracket :: acc)
         | '>' :: tail -> loop tail (RightAngleBracket :: acc)
+        | ',' :: tail -> loop tail (Comma :: acc)
         | '"' :: tail ->
             let consumed, rest = takeWhile (fun c -> c <> '"') tail
 

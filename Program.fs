@@ -1,7 +1,9 @@
-open Lexer
+module Petram.Program
 
 [<EntryPoint>]
 let main args =
-    let tokenList = lexFile args[0]
-    tokenList |> List.iter (fun token -> printfn "%s" (token.ToString()))
+    let tokenList = Lexer.lexFile args[0]
+
+    Parser.parse tokenList |> fun decl -> printfn $"%s{decl.ToString()}"
+
     0
