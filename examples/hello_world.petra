@@ -1,5 +1,6 @@
 -- This is a comment!
 func main(args: List<String>): Int
     println(message: "Hello, world!")
+    println(message: "How about another message?")
     return 0
 end
