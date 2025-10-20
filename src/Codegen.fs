@@ -64,16 +64,17 @@ let emitFunction (fn: FunctionDeclaration) : string =
 
     sprintf
         $"""
-    {returnType} {fn.Name}({args}) {{
-        {bodyStatements}
-    }}
+{returnType} {fn.Name}({args}) {{
+    {bodyStatements}
+}}
     """
 
 let emit (fn: FunctionDeclaration) : string =
     let functionCall = emitFunction fn
 
     sprintf
-        $"""#include <stdio.h>
+        $"""
+#include <stdio.h>
 #include <stdint.h>
 
 {functionCall}
