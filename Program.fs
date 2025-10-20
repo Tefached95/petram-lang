@@ -7,10 +7,10 @@ let main args =
         1
     else
         let filePath = args[0]
-        let tokenList = Lexer.lexFile filePath
+        let generatedCode = Lexer.lexFile filePath |> Parser.parse |> Codegen.emit
+
         let nameOnly = Path.GetFileNameWithoutExtension filePath
 
-        let generatedCode = Parser.parse tokenList |> Codegen.emit
         File.WriteAllText($"{nameOnly}.c", generatedCode)
 
         0
