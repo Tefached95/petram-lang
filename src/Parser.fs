@@ -22,7 +22,7 @@ let rec parseExpression (tokens: Token list) : Expression * Token list =
     | Token.Identifier name :: LeftParenthesis :: tail ->
         // function call
         let args, rest = parseArguments tail
-        (FunctionCall(name, args), rest)
+        FunctionCall(name, args), rest
     | Token.Identifier name :: tail ->
         // variable
         Identifier name, tail

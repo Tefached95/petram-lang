@@ -26,40 +26,41 @@ let rec emitType (typeAnnotation: TypeAnnotation) : string =
 
 let rec emitExpression (expr: Expression) : string =
     match expr with
-    | IntLiteral n -> sprintf "%d" n
-    | FloatLiteral n -> sprintf "%f" n
-    | StringLiteral s -> sprintf "\"%s\"" s
-    | Identifier id -> sprintf "%s" id
+    | IntLiteral n -> $"%d{n}"
+    | FloatLiteral n -> $"%f{n}"
+    | StringLiteral s -> $"\"%s{s}\""
+    | Identifier id -> $"%s{id}"
     | FunctionCall(name, args) ->
         match name with
         | "println" ->
             let _, messageExpr = List.head args
             let messageStr = emitExpression messageExpr
-            let withNewline = messageStr.[.. messageStr.Length - 2] + "\\n\"" //@FIXME: This is ass. We'll handle stdlib calls later. For now, we remove the last `"` and replace it with `"\n`
+            //@FIXME: This is ass. We'll handle stdlib calls later. For now, we remove the last `"` and replace it with `"\n`
+            let withNewline = messageStr.[.. messageStr.Length - 2] + "\\n\""
             sprintf $"printf({withNewline})"
         | t -> failwith $"TODO: Support function {t}"
 
 let emitStatement (statement: Statement) : string =
     match statement with
-    | Return value -> sprintf $"return {emitExpression value};"
-    | ExpressionStatement exprStatement -> sprintf $"{emitExpression exprStatement};"
+    | Return value -> $"return {emitExpression value};"
+    | ExpressionStatement exprStatement -> $"{emitExpression exprStatement};"
     | VarDecl(varName, typeAnnotation, varValue) ->
         match typeAnnotation with
-        | Some typ -> sprintf $"{emitType typ} {varName} = {emitExpression varValue};"
+        | Some typ -> $"{emitType typ} {varName} = {emitExpression varValue};"
         | None ->
             match varValue with
-            | IntLiteral n -> sprintf $"int64_t {varName} = {emitExpression varValue};"
-            | FloatLiteral n -> sprintf $"double {varName} = {emitExpression varValue};"
-            | StringLiteral s -> sprintf $"const char* {varName} = {emitExpression varValue};"
+            | IntLiteral _ -> $"int64_t {varName} = {emitExpression varValue};"
+            | FloatLiteral _ -> $"double {varName} = {emitExpression varValue};"
+            | StringLiteral _ -> $"const char* {varName} = {emitExpression varValue};"
             | _ -> failwith "TODO: Type inference for complex expressions"
     | ConstDecl(varName, typeAnnotation, varValue) ->
         match typeAnnotation with
-        | Some typ -> sprintf $"const {emitType typ} {varName} = {emitExpression varValue};"
+        | Some typ -> $"const {emitType typ} {varName} = {emitExpression varValue};"
         | None ->
             match varValue with
-            | IntLiteral n -> sprintf $"const int64_t {varName} = {emitExpression varValue};"
-            | FloatLiteral n -> sprintf $"const double {varName} = {emitExpression varValue};"
-            | StringLiteral s -> sprintf $"const char* {varName} = {emitExpression varValue};"
+            | IntLiteral _ -> $"const int64_t {varName} = {emitExpression varValue};"
+            | FloatLiteral _ -> $"const double {varName} = {emitExpression varValue};"
+            | StringLiteral _ -> $"const char* {varName} = {emitExpression varValue};"
             | _ -> failwith "TODO: Type inference for complex expressions"
 
 let emitFunction (fn: FunctionDeclaration) : string =
@@ -80,13 +81,12 @@ let emitFunction (fn: FunctionDeclaration) : string =
                 parameters
                 |> List.map (fun p ->
                     let cType = emitType p.Type
-                    sprintf "%s %s" cType p.Name)
+                    $"%s{cType} %s{p.Name}")
                 |> String.concat ", "
 
     let bodyStatements = fn.Body |> List.map emitStatement |> String.concat "\n    "
 
-    sprintf
-        $"""
+    $"""
 {returnType} {fn.Name}({args}) {{
     {bodyStatements}
 }}
@@ -95,8 +95,7 @@ let emitFunction (fn: FunctionDeclaration) : string =
 let emit (fn: FunctionDeclaration) : string =
     let functionCall = emitFunction fn
 
-    sprintf
-        $"""
+    $"""
 #include <stdio.h>
 #include <stdint.h>
 

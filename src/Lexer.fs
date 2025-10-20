@@ -4,10 +4,10 @@ open System
 open Tokens
 
 let charArrayToString (chars: char list) : string =
-    (chars |> List.toArray |> System.String).Trim()
+    (chars |> List.toArray |> String).Trim()
 
 let isIdentifierChar c =
-    System.Char.IsLetterOrDigit c || c = '_'
+    Char.IsLetterOrDigit c || c = '_'
 
 /// <summary>
 /// Consumes the input stream of `chars` while `predicate` holds true. Unlike `List.takeWhile`, this method will return a tuple containing the consumed list and the remainder.
@@ -29,7 +29,7 @@ let lex (chars: char list) : Token list =
     let rec loop (chars: char list) (acc: Token list) =
         match chars with
         | [] -> acc |> List.rev
-        | c :: rest when System.Char.IsWhiteSpace c -> loop rest acc
+        | c :: rest when Char.IsWhiteSpace c -> loop rest acc
         | '-' :: '-' :: tail ->
             let comment, rest = takeWhile (fun c -> c <> '\n') tail
 
@@ -47,7 +47,7 @@ let lex (chars: char list) : Token list =
             match rest with
             | '"' :: remaining -> loop remaining (StringLiteral(charArrayToString consumed) :: acc)
             | _ -> failwith "Unterminated string literal."
-        | head :: tail when System.Char.IsLetter head ->
+        | head :: tail when Char.IsLetter head ->
             let consumed, rest = takeWhile isIdentifierChar tail
 
             match charArrayToString (head :: consumed) with
@@ -57,13 +57,13 @@ let lex (chars: char list) : Token list =
             | "var" -> loop rest (Var :: acc)
             | "const" -> loop rest (Const :: acc)
             | ident -> loop rest (Identifier ident :: acc)
-        | head :: tail when System.Char.IsDigit head ->
+        | head :: tail when Char.IsDigit head ->
             // We're dealing with a number. Need to check if it's an int or a float literal. Untyped defaults to system-specific largest word.
-            let consumed, rest = takeWhile System.Char.IsDigit tail
+            let consumed, rest = takeWhile Char.IsDigit tail
 
             match rest with
             | '.' :: rest' ->
-                let decimalPart, remaining = takeWhile System.Char.IsDigit rest'
+                let decimalPart, remaining = takeWhile Char.IsDigit rest'
 
                 // If the decimal part is empty, then ignore the `.` token and just emit an integer literal.
                 if List.isEmpty decimalPart then
