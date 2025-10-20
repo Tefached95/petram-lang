@@ -1,6 +1,6 @@
 module Lexer
 
-open System.IO
+open System
 open Tokens
 
 let charArrayToString (chars: char list) : string =
@@ -9,6 +9,12 @@ let charArrayToString (chars: char list) : string =
 let isIdentifierChar c =
     System.Char.IsLetterOrDigit c || c = '_'
 
+/// <summary>
+/// Consumes the input stream of `chars` while `predicate` holds true. Unlike `List.takeWhile`, this method will return a tuple containing the consumed list and the remainder.
+/// </summary>
+/// <param name="predicate">Predicate function to check if we should consume a character</param>
+/// <param name="chars">List of characters to iterate over.</param>
+/// <returns>Tuple where `fst` is the consumed part and `snd` is the remainder.</returns>
 let rec takeWhile (predicate: char -> bool) (chars: char list) : char list * char list =
     match chars with
     | [] -> [], []
@@ -34,6 +40,7 @@ let lex (chars: char list) : Token list =
         | '<' :: tail -> loop tail (LeftAngleBracket :: acc)
         | '>' :: tail -> loop tail (RightAngleBracket :: acc)
         | ',' :: tail -> loop tail (Comma :: acc)
+        | '=' :: tail -> loop tail (Equals :: acc)
         | '"' :: tail ->
             let consumed, rest = takeWhile (fun c -> c <> '"') tail
 
@@ -47,17 +54,35 @@ let lex (chars: char list) : Token list =
             | "func" -> loop rest (Func :: acc)
             | "return" -> loop rest (Return :: acc)
             | "end" -> loop rest (End :: acc)
+            | "var" -> loop rest (Var :: acc)
+            | "const" -> loop rest (Const :: acc)
             | ident -> loop rest (Identifier ident :: acc)
         | head :: tail when System.Char.IsDigit head ->
+            // We're dealing with a number. Need to check if it's an int or a float literal. Untyped defaults to system-specific largest word.
             let consumed, rest = takeWhile System.Char.IsDigit tail
-            let numberStr = charArrayToString (head :: consumed)
-            let number = System.Int32.Parse numberStr
-            loop rest (IntLiteral number :: acc)
+
+            match rest with
+            | '.' :: rest' ->
+                let decimalPart, remaining = takeWhile System.Char.IsDigit rest'
+
+                // If the decimal part is empty, then ignore the `.` token and just emit an integer literal.
+                if List.isEmpty decimalPart then
+                    let numberStr = charArrayToString (head :: consumed)
+                    let number = int64 numberStr
+                    loop rest (IntLiteral number :: acc)
+                else
+                    let numberStr = charArrayToString (head :: consumed @ '.' :: decimalPart)
+                    let number = float numberStr
+                    loop remaining (FloatLiteral number :: acc)
+            | _ :: rest' ->
+                let numberStr = charArrayToString (head :: consumed)
+                let number = int64 numberStr
+                loop rest' (IntLiteral number :: acc)
         | _ :: tail -> loop tail (Unknown :: acc)
 
     loop chars []
 
 let lexFile (path: string) : Token list =
-    let programInput = File.ReadAllText path
+    let programInput = IO.File.ReadAllText path
     let chars = programInput.ToCharArray() |> Array.toList
     lex chars

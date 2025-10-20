@@ -8,10 +8,14 @@ type Token =
     | LeftParenthesis
     | RightParenthesis
     | Identifier of string
-    | IntLiteral of int
+    | IntLiteral of int64
+    | FloatLiteral of float
     | LeftAngleBracket
     | RightAngleBracket
     | StringLiteral of string
+    | Var
+    | Const
+    | Equals
     | Comma
     | Return
     | End

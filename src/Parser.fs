@@ -16,15 +16,16 @@ let rec parseTypeAnnotation (tokens: Token list) : TypeAnnotation * Token list =
 
 let rec parseExpression (tokens: Token list) : Expression * Token list =
     match tokens with
-    | Token.IntLiteral value :: tail -> (IntLiteral value, tail)
-    | Token.StringLiteral str :: tail -> (StringLiteral str, tail)
-    | Token.Identifier name :: Token.LeftParenthesis :: tail ->
+    | Token.IntLiteral value :: tail -> IntLiteral value, tail
+    | Token.FloatLiteral value :: tail -> FloatLiteral value, tail
+    | Token.StringLiteral str :: tail -> StringLiteral str, tail
+    | Token.Identifier name :: LeftParenthesis :: tail ->
         // function call
         let args, rest = parseArguments tail
         (FunctionCall(name, args), rest)
     | Token.Identifier name :: tail ->
         // variable
-        (Identifier name, tail)
+        Identifier name, tail
     | _ -> failwith "Unexpected token in expression"
 
 and parseArguments (tokens: Token list) : (string * Expression) list * Token list =
@@ -43,16 +44,50 @@ and parseArguments (tokens: Token list) : (string * Expression) list * Token lis
 
 let rec parseStatements (tokens: Token list) : Statement list * Token list =
     match tokens with
-    | End :: tail -> ([], tail)
+    | SingleLineComment _ :: tail -> parseStatements tail
+    | End :: tail -> [], tail
     | Token.Return :: tail ->
         let expr, rest = parseExpression tail
         let otherStatements, rest' = parseStatements rest
-        (Return expr :: otherStatements, rest')
+        Return expr :: otherStatements, rest'
+    | Var :: Token.Identifier name :: tail ->
+        match tail with
+        | Colon :: rest ->
+            // Suppose we have `var a: uint8 = 1
+            // we've matched Var :: Identifier("a") :: Colon, and rest is [Identifier("uint8"); Equals; IntLiteral(1)]
+            let typeIdentifier, rest' = parseTypeAnnotation rest
+            // typeIdentifier should now be SimpleType("uint8") and rest' is [Equals; IntLiteral(1)]
+            match rest' with
+            | Equals :: rest'' ->
+                let expr, rest''' = parseExpression rest''
+                let otherStatements, rest'''' = parseStatements rest'''
+                VarDecl(name, Some typeIdentifier, expr) :: otherStatements, rest''''
+            | _ -> failwith "Expected `=` after type annotation"
+        | Equals :: rest ->
+            // No type identifier, assume
+            let expr, rest' = parseExpression rest
+            let otherStatements, rest'' = parseStatements rest'
+            VarDecl(name, None, expr) :: otherStatements, rest''
+    | Const :: Token.Identifier name :: tail ->
+        match tail with
+        | Colon :: rest ->
+            let typeIdentifier, rest' = parseTypeAnnotation rest
+
+            match rest' with
+            | Equals :: rest'' ->
+                let expr, rest''' = parseExpression rest''
+                let otherStatements, rest'''' = parseStatements rest'''
+                ConstDecl(name, Some typeIdentifier, expr) :: otherStatements, rest''''
+            | _ -> failwith "Expected `=` after type annotation"
+        | Equals :: rest ->
+            let expr, rest' = parseExpression rest
+            let otherStatements, rest'' = parseStatements rest'
+            ConstDecl(name, None, expr) :: otherStatements, rest''
     | Token.Identifier _ :: _ ->
         // Expression statement
         let expr, rest = parseExpression tokens
         let otherStatements, rest' = parseStatements rest
-        (ExpressionStatement expr :: otherStatements, rest')
+        ExpressionStatement expr :: otherStatements, rest'
     | t -> failwith $"Not implemented for {t}"
 
 let rec parseParameter (tokens: Token list) : Parameter * Token list =
@@ -60,7 +95,7 @@ let rec parseParameter (tokens: Token list) : Parameter * Token list =
     | Token.Identifier paramName :: Colon :: tail ->
         let paramType, remaining = parseTypeAnnotation tail
         let param = { Name = paramName; Type = paramType }
-        (param, remaining)
+        param, remaining
     | _ -> failwith "Expected parameter"
 
 let rec parseParameters (tokens: Token list) : Parameter list * Token list =
@@ -72,7 +107,7 @@ let rec parseParameters (tokens: Token list) : Parameter list * Token list =
         match remaining with
         | Comma :: rest ->
             let otherParams, finalTokens = parseParameters rest
-            (param :: otherParams, finalTokens)
+            param :: otherParams, finalTokens
         | RightParenthesis :: _ -> ([ param ], remaining)
         | _ -> failwith "Expected `,` or `)` after parameter"
 

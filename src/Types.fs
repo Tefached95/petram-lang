@@ -7,7 +7,8 @@ type TypeAnnotation =
 type Parameter = { Name: string; Type: TypeAnnotation }
 
 type Expression =
-    | IntLiteral of int
+    | IntLiteral of int64
+    | FloatLiteral of float
     | StringLiteral of string
     | Identifier of string
     | FunctionCall of name: string * arguments: (string * Expression) list
@@ -15,6 +16,8 @@ type Expression =
 type Statement =
     | ExpressionStatement of Expression
     | Return of Expression
+    | VarDecl of name: string * typ: TypeAnnotation option * value: Expression
+    | ConstDecl of name: string * typ: TypeAnnotation option * value: Expression
 
 type FunctionDeclaration =
     { Name: string

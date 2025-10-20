@@ -2,5 +2,11 @@
 func main(args: List<String>): Int
     println(message: "Hello, world!")
     println(message: "How about another message?")
+    -- Variable assignment, with implicit and explicit types
+    var x = 3
+    var a: uint8 = 1
+    -- And here's a const
+    const PI = 3.14
+    const E: float32 = 2.71828
     return 0
 end
