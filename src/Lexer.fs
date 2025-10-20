@@ -6,8 +6,7 @@ open Tokens
 let charArrayToString (chars: char list) : string =
     (chars |> List.toArray |> String).Trim()
 
-let isIdentifierChar c =
-    Char.IsLetterOrDigit c || c = '_'
+let isIdentifierChar c = Char.IsLetterOrDigit c || c = '_'
 
 /// <summary>
 /// Consumes the input stream of `chars` while `predicate` holds true. Unlike `List.takeWhile`, this method will return a tuple containing the consumed list and the remainder.
