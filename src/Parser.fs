@@ -88,18 +88,21 @@ let rec parseParameter (tokens: Token list) : Parameter * Token list =
         param, remaining
     | _ -> failwith "Expected parameter"
 
-let rec parseParameters (tokens: Token list) : Parameter list * Token list =
+let rec parseDelimitedList (parseOne: 'a list -> 'b * 'a list) (closingDelim: Token) (tokens: Token list) =
     match tokens with
-    | RightParenthesis :: _ -> [], tokens
+    | token :: _ when token = closingDelim -> [], tokens
     | _ ->
-        let param, remaining = parseParameter tokens
+        let param, remaining = parseOne tokens
 
         match remaining with
         | Comma :: rest ->
-            let otherParams, finalTokens = parseParameters rest
+            let otherParams, finalTokens = parseDelimitedList parseOne closingDelim rest
             param :: otherParams, finalTokens
-        | RightParenthesis :: _ -> ([ param ], remaining)
+        | token :: _ when token = closingDelim -> [ param ], remaining
         | _ -> failwith "Expected `,` or `)` after parameter"
+
+let parseParameters (tokens: Token list) : Parameter list * Token list =
+    parseDelimitedList parseParameter RightParenthesis tokens
 
 let parseFunctionDeclaration (tokens: Token list) : FunctionDeclaration * Token list =
     match tokens with
