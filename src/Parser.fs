@@ -42,6 +42,23 @@ and parseArguments (tokens: Token list) : (string * Expression) list * Token lis
         | _ -> failwith "Expected ',' or ')' after argument"
     | _ -> failwith "Expected argument name"
 
+let (|DeclWithOptionalType|_|)
+    (tokens: Token list)
+    : (string * TypeAnnotation option * Expression * Token list) option =
+    match tokens with
+    | Token.Identifier name :: Colon :: tail ->
+        let annotation, rest = parseTypeAnnotation tail
+
+        match rest with
+        | Equals :: rest' ->
+            let expr, rest'' = parseExpression rest'
+            Some(name, Some annotation, expr, rest'')
+        | _ -> failwith "Expected `=` after type declaration"
+    | Token.Identifier name :: Equals :: tail ->
+        let expr, rest = parseExpression tail
+        Some(name, None, expr, rest)
+    | _ -> None
+
 let rec parseStatements (tokens: Token list) : Statement list * Token list =
     match tokens with
     | SingleLineComment _ :: tail -> parseStatements tail
@@ -50,39 +67,12 @@ let rec parseStatements (tokens: Token list) : Statement list * Token list =
         let expr, rest = parseExpression tail
         let otherStatements, rest' = parseStatements rest
         Return expr :: otherStatements, rest'
-    | Var :: Token.Identifier name :: tail ->
-        match tail with
-        | Colon :: rest ->
-            // Suppose we have `var a: uint8 = 1
-            // we've matched Var :: Identifier("a") :: Colon, and rest is [Identifier("uint8"); Equals; IntLiteral(1)]
-            let typeIdentifier, rest' = parseTypeAnnotation rest
-            // typeIdentifier should now be SimpleType("uint8") and rest' is [Equals; IntLiteral(1)]
-            match rest' with
-            | Equals :: rest'' ->
-                let expr, rest''' = parseExpression rest''
-                let otherStatements, rest'''' = parseStatements rest'''
-                VarDecl(name, Some typeIdentifier, expr) :: otherStatements, rest''''
-            | _ -> failwith "Expected `=` after type annotation"
-        | Equals :: rest ->
-            // No type identifier, assume
-            let expr, rest' = parseExpression rest
-            let otherStatements, rest'' = parseStatements rest'
-            VarDecl(name, None, expr) :: otherStatements, rest''
-    | Const :: Token.Identifier name :: tail ->
-        match tail with
-        | Colon :: rest ->
-            let typeIdentifier, rest' = parseTypeAnnotation rest
-
-            match rest' with
-            | Equals :: rest'' ->
-                let expr, rest''' = parseExpression rest''
-                let otherStatements, rest'''' = parseStatements rest'''
-                ConstDecl(name, Some typeIdentifier, expr) :: otherStatements, rest''''
-            | _ -> failwith "Expected `=` after type annotation"
-        | Equals :: rest ->
-            let expr, rest' = parseExpression rest
-            let otherStatements, rest'' = parseStatements rest'
-            ConstDecl(name, None, expr) :: otherStatements, rest''
+    | Var :: DeclWithOptionalType(name, maybeType, expr, rest) ->
+        let otherStatements, rest' = parseStatements rest
+        VarDecl(name, maybeType, expr) :: otherStatements, rest'
+    | Const :: DeclWithOptionalType(name, maybeType, expr, rest) ->
+        let otherStatements, rest' = parseStatements rest
+        ConstDecl(name, maybeType, expr) :: otherStatements, rest'
     | Token.Identifier _ :: _ ->
         // Expression statement
         let expr, rest = parseExpression tokens
