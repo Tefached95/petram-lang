@@ -1,0 +1,28 @@
+struct Vector3
+    x, y, z: f64
+end
+
+func (v: *Vector3) scalar(scalar: f64): ()
+    v*.x *= scalar
+    v*.y *= scalar
+    v*.z *= scalar
+end
+
+-- Associated function
+func Vector3::one(): Vector3
+    return Vector3::new(x: 1.0, y: 1.0, z: 1.0)
+end
+
+func main(args: List<String>): Int
+    -- Instantiate a new Vector3
+    var point: Vector3 = Vector3::new(x: 1.0, y: 2.0, z: 3.0)
+    
+    -- Since the function `scalar` is received as a mutable reference, we modify `point`
+    -- The point should now be x = 4.0, y = 8.0, z = 12.0
+    point.scalar(scalar: 4.0)
+
+    -- We can also use associated functions
+    -- x = 1.0, y = 1.0, z = 1.0
+    var v3one = Vector3::one()
+    return 0
+end
