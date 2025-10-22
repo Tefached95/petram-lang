@@ -5,32 +5,32 @@ open Types
 
 let rec parseTypeAnnotation (tokens: Token list) : TypeAnnotation * Token list =
     match tokens with
-    | Token.Identifier typeName :: LeftAngleBracket :: rest ->
-        let typeArg, rest' = parseTypeAnnotation rest
+    | Token.Identifier typeName :: LeftAngleBracket :: args ->
+        let typeArg, afterArgs = parseTypeAnnotation args
 
-        match rest' with
-        | RightAngleBracket :: remaining -> GenericType(typeName, [ typeArg ]), remaining
+        match afterArgs with
+        | RightAngleBracket :: rest -> GenericType(typeName, [ typeArg ]), rest
         | _ -> failwith "Expected >"
     | Token.Identifier typeName :: rest -> SimpleType typeName, rest
     | _ -> failwith "Expected type name"
 
-let rec parseDelimitedList (parseOne: 'a list -> 'b * 'a list) (closingDelim: Token) (tokens: Token list) =
+let rec parseDelimitedList (parseOne: 'a list -> 'b * 'a list) (closingDelimiter: Token) (tokens: Token list) =
     match tokens with
-    | token :: _ when token = closingDelim -> [], tokens
+    | token :: _ when token = closingDelimiter -> [], tokens
     | _ ->
         let param, remaining = parseOne tokens
 
         match remaining with
         | Comma :: rest ->
-            let otherParams, finalTokens = parseDelimitedList parseOne closingDelim rest
+            let otherParams, finalTokens = parseDelimitedList parseOne closingDelimiter rest
             param :: otherParams, finalTokens
-        | token :: _ when token = closingDelim -> [ param ], remaining
+        | token :: _ when token = closingDelimiter -> [ param ], remaining
         | _ -> failwith "Expected `,` or `)` after parameter"
 
 let rec parseParameter (tokens: Token list) : Parameter * Token list =
     match tokens with
-    | Token.Identifier paramName :: Colon :: tail ->
-        let paramType, remaining = parseTypeAnnotation tail
+    | Token.Identifier paramName :: Colon :: typ ->
+        let paramType, remaining = parseTypeAnnotation typ
         let param = { Name = paramName; Type = paramType }
         param, remaining
     | _ -> failwith "Expected parameter"
@@ -60,25 +60,25 @@ and parseArguments (tokens: Token list) : Argument list * Token list =
 
 and parseArgument (tokens: Token list) : Argument * Token list =
     match tokens with
-    | Token.Identifier argName :: Colon :: tail ->
-        let argExpr, rest = parseExpression tail
+    | Token.Identifier argName :: Colon :: expression ->
+        let argExpr, rest = parseExpression expression
         let arg = { Name = argName; Expr = argExpr }
         arg, rest
 
-let (|DeclWithOptionalType|_|)
+let (|DeclarationWithOptionalTypes|_|)
     (tokens: Token list)
     : (string * TypeAnnotation option * Expression * Token list) option =
     match tokens with
-    | Token.Identifier name :: Colon :: tail ->
-        let annotation, rest = parseTypeAnnotation tail
+    | Token.Identifier name :: Colon :: typAnnotation ->
+        let annotation, afterAnnotation = parseTypeAnnotation typAnnotation
 
-        match rest with
-        | Equals :: rest' ->
-            let expr, rest'' = parseExpression rest'
-            Some(name, Some annotation, expr, rest'')
+        match afterAnnotation with
+        | Equals :: valueExpression ->
+            let expr, remaining = parseExpression valueExpression
+            Some(name, Some annotation, expr, remaining)
         | _ -> failwith "Expected `=` after type declaration"
-    | Token.Identifier name :: Equals :: tail ->
-        let expr, rest = parseExpression tail
+    | Token.Identifier name :: Equals :: valueExpression ->
+        let expr, rest = parseExpression valueExpression
         Some(name, None, expr, rest)
     | _ -> None
 
@@ -86,39 +86,38 @@ let rec parseStatements (tokens: Token list) : Statement list * Token list =
     match tokens with
     | SingleLineComment _ :: tail -> parseStatements tail
     | End :: tail -> [], tail
-    | Token.Return :: tail ->
-        let expr, rest = parseExpression tail
-        let otherStatements, rest' = parseStatements rest
-        Return expr :: otherStatements, rest'
-    | Var :: DeclWithOptionalType(name, maybeType, expr, rest) ->
-        let otherStatements, rest' = parseStatements rest
-        VarDecl(name, maybeType, expr) :: otherStatements, rest'
-    | Const :: DeclWithOptionalType(name, maybeType, expr, rest) ->
-        let otherStatements, rest' = parseStatements rest
-        ConstDecl(name, maybeType, expr) :: otherStatements, rest'
+    | Token.Return :: returnValue ->
+        let expr, afterReturn = parseExpression returnValue
+        let otherStatements, remaining = parseStatements afterReturn
+        Return expr :: otherStatements, remaining
+    | Var :: DeclarationWithOptionalTypes(name, maybeType, expr, statements) ->
+        let otherStatements, remaining = parseStatements statements
+        VarDecl(name, maybeType, expr) :: otherStatements, remaining
+    | Const :: DeclarationWithOptionalTypes(name, maybeType, expr, statements) ->
+        let otherStatements, remaining = parseStatements statements
+        ConstDecl(name, maybeType, expr) :: otherStatements, remaining
     | Token.Identifier _ :: _ ->
         // Expression statement
-        let expr, rest = parseExpression tokens
-        let otherStatements, rest' = parseStatements rest
-        ExpressionStatement expr :: otherStatements, rest'
+        let expr, remainingStatements = parseExpression tokens
+        let otherStatements, rest = parseStatements remainingStatements
+        ExpressionStatement expr :: otherStatements, rest
     | t -> failwith $"Not implemented for {t}"
 
 let parseFunctionDeclaration (tokens: Token list) : FunctionDeclaration * Token list =
     match tokens with
-    // e.g. println( [...]
-    | Token.Identifier name :: LeftParenthesis :: tail ->
-        let parameters, rest = parseParameters tail
+    | Token.Identifier name :: LeftParenthesis :: parameters ->
+        let parameters, afterParameters = parseParameters parameters
 
-        match rest with
-        | RightParenthesis :: Colon :: rest' ->
-            let returnType, rest'' = parseTypeAnnotation rest'
-            let statements, rest''' = parseStatements rest''
+        match afterParameters with
+        | RightParenthesis :: Colon :: returnAnnotation ->
+            let returnType, functionBody = parseTypeAnnotation returnAnnotation
+            let statements, remaining = parseStatements functionBody
 
             { Name = name
               Parameters = Some parameters
               ReturnType = Some returnType
               Body = statements },
-            rest'''
+            remaining
         | _ -> failwith "Expected ')' and return type"
     | _ -> failwith "Expected function name and parameters"
 
