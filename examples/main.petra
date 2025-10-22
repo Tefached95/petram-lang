@@ -7,9 +7,6 @@ func add_two_integers(a: Int, b: Int): Int
     return a + b
 end
 
--- Lambda version
-var add_two_integers_lambda = |a: Int, b: Int| a + b end
-
 func divide_two_integers(dividend: Int, divisor: Int): Result<Int, String>
     if divisor == 0
         println(message: "Divisor must not be 0.")
