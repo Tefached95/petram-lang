@@ -11,6 +11,9 @@ let main args =
 
         let nameOnly = Path.GetFileNameWithoutExtension filePath
 
-        File.WriteAllText($"{nameOnly}.c", generatedCode)
+        if Path.Exists "output" = false then
+            Directory.CreateDirectory "output" |> ignore
+
+        File.WriteAllText($"output/{nameOnly}.c", generatedCode)
 
         0
