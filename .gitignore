@@ -38,3 +38,6 @@ paket-files/
 TestResults/
 *.trx
 .fake
+
+# Ignore output .c files
+/output/
