@@ -16,10 +16,11 @@ let rec emitExpression (expr: Expression) : string =
     | StringLiteral s -> $"\"%s{s}\""
     | Identifier id -> $"%s{id}"
     | FunctionCall(name, args) ->
+        // @FIXME: mega ass. we should not handle function calls like this in codegen, but for a vertical slice, whatever.
         match name with
         | "println" ->
-            let _, messageExpr = List.head args
-            let messageStr = emitExpression messageExpr
+            let messageArg = args |> List.find (fun arg -> arg.Name = "message")
+            let messageStr = emitExpression messageArg.Expr
             //@FIXME: This is ass. We'll handle stdlib calls later. For now, we remove the last `"` and replace it with `"\n`
             let withNewline = messageStr.[.. messageStr.Length - 2] + "\\n\""
             sprintf $"printf({withNewline})"

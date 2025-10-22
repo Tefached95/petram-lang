@@ -14,6 +14,30 @@ let rec parseTypeAnnotation (tokens: Token list) : TypeAnnotation * Token list =
     | Token.Identifier typeName :: rest -> SimpleType typeName, rest
     | _ -> failwith "Expected type name"
 
+let rec parseDelimitedList (parseOne: 'a list -> 'b * 'a list) (closingDelim: Token) (tokens: Token list) =
+    match tokens with
+    | token :: _ when token = closingDelim -> [], tokens
+    | _ ->
+        let param, remaining = parseOne tokens
+
+        match remaining with
+        | Comma :: rest ->
+            let otherParams, finalTokens = parseDelimitedList parseOne closingDelim rest
+            param :: otherParams, finalTokens
+        | token :: _ when token = closingDelim -> [ param ], remaining
+        | _ -> failwith "Expected `,` or `)` after parameter"
+
+let rec parseParameter (tokens: Token list) : Parameter * Token list =
+    match tokens with
+    | Token.Identifier paramName :: Colon :: tail ->
+        let paramType, remaining = parseTypeAnnotation tail
+        let param = { Name = paramName; Type = paramType }
+        param, remaining
+    | _ -> failwith "Expected parameter"
+
+let parseParameters (tokens: Token list) : Parameter list * Token list =
+    parseDelimitedList parseParameter RightParenthesis tokens
+
 let rec parseExpression (tokens: Token list) : Expression * Token list =
     match tokens with
     | Token.IntLiteral value :: tail -> IntLiteral value, tail
@@ -22,25 +46,24 @@ let rec parseExpression (tokens: Token list) : Expression * Token list =
     | Token.Identifier name :: LeftParenthesis :: tail ->
         // function call
         let args, rest = parseArguments tail
-        FunctionCall(name, args), rest
+
+        match rest with
+        | RightParenthesis :: remaining -> FunctionCall(name, args), remaining
+        | _ -> failwith "Expected `)` after function arguments"
     | Token.Identifier name :: tail ->
         // variable
         Identifier name, tail
     | _ -> failwith "Unexpected token in expression"
 
-and parseArguments (tokens: Token list) : (string * Expression) list * Token list =
-    match tokens with
-    | RightParenthesis :: rest -> ([], rest)
-    | Token.Identifier argName :: Colon :: tail ->
-        let argExpr, rest' = parseExpression tail
+and parseArguments (tokens: Token list) : Argument list * Token list =
+    parseDelimitedList parseArgument RightParenthesis tokens
 
-        match rest' with
-        | Comma :: rest'' ->
-            let moreArgs, rest''' = parseArguments rest''
-            (argName, argExpr) :: moreArgs, rest'''
-        | RightParenthesis :: rest'' -> [ (argName, argExpr) ], rest''
-        | _ -> failwith "Expected ',' or ')' after argument"
-    | _ -> failwith "Expected argument name"
+and parseArgument (tokens: Token list) : Argument * Token list =
+    match tokens with
+    | Token.Identifier argName :: Colon :: tail ->
+        let argExpr, rest = parseExpression tail
+        let arg = { Name = argName; Expr = argExpr }
+        arg, rest
 
 let (|DeclWithOptionalType|_|)
     (tokens: Token list)
@@ -79,30 +102,6 @@ let rec parseStatements (tokens: Token list) : Statement list * Token list =
         let otherStatements, rest' = parseStatements rest
         ExpressionStatement expr :: otherStatements, rest'
     | t -> failwith $"Not implemented for {t}"
-
-let rec parseParameter (tokens: Token list) : Parameter * Token list =
-    match tokens with
-    | Token.Identifier paramName :: Colon :: tail ->
-        let paramType, remaining = parseTypeAnnotation tail
-        let param = { Name = paramName; Type = paramType }
-        param, remaining
-    | _ -> failwith "Expected parameter"
-
-let rec parseDelimitedList (parseOne: 'a list -> 'b * 'a list) (closingDelim: Token) (tokens: Token list) =
-    match tokens with
-    | token :: _ when token = closingDelim -> [], tokens
-    | _ ->
-        let param, remaining = parseOne tokens
-
-        match remaining with
-        | Comma :: rest ->
-            let otherParams, finalTokens = parseDelimitedList parseOne closingDelim rest
-            param :: otherParams, finalTokens
-        | token :: _ when token = closingDelim -> [ param ], remaining
-        | _ -> failwith "Expected `,` or `)` after parameter"
-
-let parseParameters (tokens: Token list) : Parameter list * Token list =
-    parseDelimitedList parseParameter RightParenthesis tokens
 
 let parseFunctionDeclaration (tokens: Token list) : FunctionDeclaration * Token list =
     match tokens with
