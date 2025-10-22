@@ -42,7 +42,7 @@ struct DoesNotImplementPrintable
 end
 
 func DoesNotImplementPrintable::new(number: Int): DoesNotImplementPrintable
-    return DoesNotImplementPrintable{ n: number }
+    return DoesNotImplementPrintable::new(n: number)
 end
 
 func main(args: List<String>): Int
