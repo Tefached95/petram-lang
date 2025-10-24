@@ -12,6 +12,11 @@ func main(args: List<String>): Int
     const PI = 3.14
     const TEST: f32 = 1.1111111112
 
+    -- Some arithmetic
+
+    -- BinaryOp(BinaryOp(BinaryOp Identifier("a") Plus Identifier("b") Plus Identifier("c")) Plus IntLiteral(4))
+    var sum = a + b + c + 4
+
     -- And finally, return.
     return 0
 end
