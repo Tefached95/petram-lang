@@ -17,29 +17,41 @@ type Token =
     | For
     | In
     | End
+    | BitwiseAnd // 'and' keyword
+    | BitwiseOr // 'or' keyword
+    | BitwiseXor // 'xor' keyword
+    | BitwiseNot // 'not' keyword
     // Symbols
-    | Colon
-    | Equals
-    | Comma
-    | LeftParenthesis
-    | RightParenthesis
-    | LeftAngleBracket
-    | RightAngleBracket
+    | Ampersand // &
+    | Colon // :
+    | DoubleColon // ::
+    | Equals // =
+    | Comma // ,
+    | Pipe // |
+    | Dot // .
+    | Arrow // ->
+    | Question // ?
+    | Exclamation // !
+    | LeftParenthesis // (
+    | RightParenthesis // )
+    | LeftBrace // {
+    | RightBrace // }
+    | LeftBracket // [
+    | RightBracket // ]
+    | LeftAngleBracket //
+    | RightAngleBracket // >
     // Operators
-    | Plus
-    | Minus
-    | Times
-    | Divided
-    | Modulo
-    | BitShiftRight
-    | BitShiftLeft
+    | Plus // +
+    | Minus // -
+    | Times // *
+    | Divided // /
+    | Modulo // %
+    | ShiftLeft // <<
+    | ShiftRight // >>
     | Range // ..
-    // Logical operators
-    | Or
-    | And
-    | Xor
-    | Not
-    // Symbols
+    | LogicalAnd // &&
+    | LogicalOr // ||
+    // Literals and identifiers
     | Identifier of string
     | IntLiteral of int64
     | FloatLiteral of float

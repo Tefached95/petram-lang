@@ -10,6 +10,7 @@ type Expression =
     | StringLiteral of string
     | Identifier of string
     | FunctionCall of name: string * arguments: Argument list
+    | BinaryOp of lhs: Expression * op: Tokens.Token * rhs: Expression
 
 and Argument = { Name: string; Expr: Expression }
 

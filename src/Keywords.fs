@@ -15,4 +15,8 @@ let keywords =
           "while", While
           "for", For
           "in", In
-          "end", End ]
+          "end", End
+          "and", BitwiseAnd
+          "or", BitwiseOr
+          "xor", BitwiseXor
+          "not", BitwiseNot ]

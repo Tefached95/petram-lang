@@ -30,18 +30,54 @@ let lex (chars: char list) : Token list =
         match chars with
         | [] -> acc |> List.rev
         | c :: rest when Char.IsWhiteSpace c -> loop rest acc
-        | '-' :: '-' :: tail ->
-            let comment, rest = takeWhile (fun c -> c <> '\n') tail
+        | '-' :: tail ->
+            match tail with
+            | '-' :: rest ->
+                let comment, rest = takeWhile (fun c -> c <> '\n') tail
 
-            loop rest (SingleLineComment(charArrayToString comment) :: acc)
-        | ':' :: tail -> loop tail (Colon :: acc)
+                loop rest (SingleLineComment(charArrayToString comment) :: acc)
+            | '>' :: rest -> loop rest (Arrow :: acc)
+            | _ -> loop tail (Minus :: acc)
+        | ':' :: tail ->
+            match tail with
+            | ':' :: rest -> loop rest (DoubleColon :: acc)
+            | _ -> loop tail (Colon :: acc)
         | '(' :: tail -> loop tail (LeftParenthesis :: acc)
         | ')' :: tail -> loop tail (RightParenthesis :: acc)
-        | '<' :: tail -> loop tail (LeftAngleBracket :: acc)
-        | '>' :: tail -> loop tail (RightAngleBracket :: acc)
+        | '[' :: tail -> loop tail (LeftBracket :: acc)
+        | ']' :: tail -> loop tail (RightBracket :: acc)
+        | '{' :: tail -> loop tail (LeftBrace :: acc)
+        | '}' :: tail -> loop tail (RightBrace :: acc)
+        | '.' :: tail ->
+            match tail with
+            | '.' :: rest -> loop rest (Range :: acc)
+            | _ -> loop tail (Dot :: acc)
+        | '?' :: tail -> loop tail (Question :: acc)
+        | '!' :: tail -> loop tail (Exclamation :: acc)
+        | '<' :: tail ->
+            match tail with
+            | '<' :: rest -> loop rest (ShiftLeft :: acc)
+            | _ -> loop tail (LeftAngleBracket :: acc)
+        | '>' :: tail ->
+            match tail with
+            | '>' :: rest -> loop rest (ShiftRight :: acc)
+            | _ -> loop tail (RightAngleBracket :: acc)
         | ',' :: tail -> loop tail (Comma :: acc)
         | '=' :: tail -> loop tail (Equals :: acc)
+        | '+' :: tail -> loop tail (Plus :: acc)
+        | '*' :: tail -> loop tail (Times :: acc)
+        | '/' :: tail -> loop tail (Divided :: acc)
+        | '%' :: tail -> loop tail (Modulo :: acc)
+        | '|' :: tail ->
+            match tail with
+            | '|' :: rest -> loop rest (LogicalOr :: acc)
+            | _ -> loop tail (Pipe :: acc)
+        | '&' :: tail ->
+            match tail with
+            | '&' :: rest -> loop rest (LogicalAnd :: acc)
+            | _ -> loop tail (Ampersand :: acc)
         | '"' :: tail ->
+            // @TODO: escape sequences
             let consumed, rest = takeWhile (fun c -> c <> '"') tail
 
             match rest with
