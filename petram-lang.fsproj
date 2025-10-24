@@ -7,12 +7,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="src/Tokens.fs"/>
-        <Compile Include="src/Types.fs"/>
-        <Compile Include="src/Lexer.fs"/>
-        <Compile Include="src/Parser.fs"/>
-        <Compile Include="src/Codegen.fs"/>
-        <Compile Include="Program.fs"/>
+        <Compile Include="src/Tokens.fs" /><Compile Include="src/Keywords.fs" />
+        <Compile Include="src/Types.fs" />
+        <Compile Include="src/Lexer.fs" />
+        <Compile Include="src/Parser.fs" />
+        <Compile Include="src/Codegen.fs" />
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
 </Project>

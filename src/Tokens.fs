@@ -18,5 +18,6 @@ type Token =
     | Equals
     | Comma
     | Return
+    | Struct
     | End
     | Unknown

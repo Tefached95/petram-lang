@@ -2,6 +2,7 @@ module Lexer
 
 open System
 open Tokens
+open Keywords
 
 let charArrayToString (chars: char list) : string =
     (chars |> List.toArray |> String).Trim()
@@ -48,14 +49,11 @@ let lex (chars: char list) : Token list =
             | _ -> failwith "Unterminated string literal."
         | head :: tail when Char.IsLetter head ->
             let consumed, rest = takeWhile isIdentifierChar tail
+            let maybeKeyword = charArrayToString (head :: consumed)
 
-            match charArrayToString (head :: consumed) with
-            | "func" -> loop rest (Func :: acc)
-            | "return" -> loop rest (Return :: acc)
-            | "end" -> loop rest (End :: acc)
-            | "var" -> loop rest (Var :: acc)
-            | "const" -> loop rest (Const :: acc)
-            | ident -> loop rest (Identifier ident :: acc)
+            match Map.tryFind maybeKeyword keywords with
+            | Some keyword -> loop rest (keyword :: acc)
+            | None -> loop rest (Identifier maybeKeyword :: acc)
         | head :: tail when Char.IsDigit head ->
             // We're dealing with a number. Need to check if it's an int or a float literal. Untyped defaults to system-specific largest word.
             let consumed, rest = takeWhile Char.IsDigit tail
