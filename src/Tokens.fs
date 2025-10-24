@@ -34,6 +34,11 @@ type Token =
     | BitShiftRight
     | BitShiftLeft
     | Range // ..
+    // Logical operators
+    | Or
+    | And
+    | Xor
+    | Not
     // Symbols
     | Identifier of string
     | IntLiteral of int64
